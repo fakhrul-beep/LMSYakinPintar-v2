@@ -1,11 +1,8 @@
-name = "yakinpintar-backend"
+name = "yakinpintarv2"
 main = "src/server.js"
 compatibility_date = "2024-02-14"
+compatibility_flags = [ "nodejs_compat" ]
 
 [vars]
-# Add non-sensitive vars here
-# Sensitive vars (SUPABASE_KEY, JWT_SECRET, etc.) should be added via Cloudflare Dashboard or 'wrangler secret put'
-
-[env.production]
-# Production specific variables
+# Variabel non-sensitif
 NODE_ENV = "production"
