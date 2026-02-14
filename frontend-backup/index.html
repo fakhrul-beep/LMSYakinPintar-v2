@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>YakinPintar - Les Privat Datang ke Rumah</title>
+    <meta
+      name="description"
+      content="YakinPintar - Platform les privat datang ke rumah dan online. Guru pilihan, jadwal fleksibel, report belajar otomatis."
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM UMD -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel for JSX in-browser (dev only) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  </head>
+  <body class="bg-slate-50 text-slate-900">
+    <div id="root"></div>
+
+    <!-- Floating WhatsApp Button -->
+    <a
+      href="https://wa.me/6281234567890?text=Halo%20YakinPintar%2C%20saya%20ingin%20konsultasi%20les%20privat."
+      class="fixed bottom-4 right-4 z-40 flex items-center gap-2 rounded-full bg-green-500 px-4 py-3 text-sm font-semibold text-white shadow-lg hover:bg-green-600 transition"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <span>Chat WhatsApp</span>
+    </a>
+
+    <script type="text/babel">
+      const { useState } = React;
+
+      const NAV_ITEMS = [
+        { id: "beranda", label: "Beranda" },
+        { id: "program", label: "Program" },
+        { id: "guru", label: "Guru" },
+        { id: "testimoni", label: "Testimoni" },
+        { id: "blog", label: "Blog" },
+      ];
+
+      function Navbar({ currentPage, onNavigate }) {
+        const [open, setOpen] = useState(false);
+
+        const handleNavClick = (page) => {
+          setOpen(false);
+          onNavigate(page);
+        };
+
+        return (
+          <header className="sticky top-0 z-30 bg-white/90 backdrop-blur shadow-sm">
+            <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 md:py-4">
+              <div
+                className="flex items-center cursor-pointer"
+                onClick={() => handleNavClick("landing")}
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-white font-bold">
+                  YP
+                </div>
+                <div className="ml-2">
+                  <div className="text-sm font-semibold tracking-wide text-slate-900">
+                    YakinPintar
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    Les Privat Datang ke Rumah
+                  </div>
+                </div>
+              </div>
+              <div className="hidden items-center gap-6 md:flex">
+                {NAV_ITEMS.map((item) => (
+                  <button
+                    key={item.id}
+                    className="text-sm font-medium text-slate-600 hover:text-blue-600"
+                    onClick={() => handleNavClick("landing")}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+                <button
+                  onClick={() => handleNavClick("daftarMurid")}
+                  className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                >
+                  Daftar Les
+                </button>
+                <button
+                  onClick={() => handleNavClick("daftarGuru")}
+                  className="rounded-full border border-blue-600 px-4 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50"
+                >
+                  Daftar Guru
+                </button>
+              </div>
+              <button
+                className="inline-flex items-center rounded md:hidden"
+                onClick={() => setOpen(!open)}
+                aria-label="Toggle menu"
+              >
+                <svg
+                  className="h-6 w-6 text-slate-700"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d={
+                      open
+                        ? "M6 18L18 6M6 6l12 12"
+                        : "M4 6h16M4 12h16M4 18h16"
+                    }
+                  />
+                </svg>
+              </button>
+            </nav>
+            {open && (
+              <div className="border-t border-slate-100 bg-white md:hidden">
+                <div className="space-y-1 px-4 py-3">
+                  {NAV_ITEMS.map((item) => (
+                    <button
+                      key={item.id}
+                      className="block w-full text-left text-sm font-medium text-slate-600 py-1.5"
+                      onClick={() => handleNavClick("landing")}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => handleNavClick("daftarMurid")}
+                    className="mt-2 w-full rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white"
+                  >
+                    Daftar Les
+                  </button>
+                  <button
+                    onClick={() => handleNavClick("daftarGuru")}
+                    className="mt-2 w-full rounded-full border border-blue-600 px-4 py-2 text-sm font-semibold text-blue-600"
+                  >
+                    Daftar Guru
+                  </button>
+                </div>
+              </div>
+            )}
+          </header>
+        );
+      }
+
+      function HeroSection({ onDaftarMurid, onDaftarGuru }) {
+        return (
+          <section className="bg-gradient-to-b from-blue-50 to-slate-50">
+            <div className="mx-auto flex max-w-6xl flex-col items-center gap-8 px-4 pb-16 pt-10 md:flex-row md:pb-20 md:pt-16">
+              <div className="flex-1">
+                <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-700">
+                  Les Privat #1 untuk Keluarga Modern
+                </span>
+                <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl">
+                  YakinPintar – Les Privat Datang ke Rumah & Online
+                </h1>
+                <p className="mt-4 max-w-xl text-sm text-slate-600 sm:text-base">
+                  Guru pilihan, jadwal fleksibel, dan report belajar otomatis
+                  setiap sesi. Sudah bantu ribuan orang tua melihat nilai anak
+                  naik dan semakin percaya diri.
+                </p>
+                <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                  <button
+                    onClick={onDaftarMurid}
+                    className="w-full rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-md hover:bg-blue-700 sm:w-auto"
+                  >
+                    Daftar Les untuk Anak Saya
+                  </button>
+                  <button
+                    onClick={onDaftarGuru}
+                    className="w-full rounded-full border border-blue-600 px-6 py-3 text-sm font-semibold text-blue-600 hover:bg-blue-50 sm:w-auto"
+                  >
+                    Saya Mau Jadi Guru
+                  </button>
+                </div>
+                <div className="mt-6 flex flex-wrap items-center gap-4 text-xs text-slate-500 sm:text-sm">
+                  <span>⭐ 4.9/5 dari 500+ ulasan</span>
+                  <span>•</span>
+                  <span>1.200+ guru aktif</span>
+                  <span>•</span>
+                  <span>Bayar setelah les selesai</span>
+                </div>
+              </div>
+              <div className="flex-1">
+                <div className="relative mx-auto max-w-md rounded-3xl bg-white p-4 shadow-xl">
+                  <div className="mb-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+                        Preview Dashboard
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        Jadwal, guru, dan report belajar dalam satu layar.
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                      Report Otomatis
+                    </span>
+                  </div>
+                  <div className="space-y-3 rounded-2xl bg-slate-50 p-3">
+                    <div className="flex items-center justify-between rounded-xl bg-white p-3">
+                      <div>
+                        <p className="text-xs font-medium text-slate-700">
+                          Matematika SMP
+                        </p>
+                        <p className="text-[11px] text-slate-500">
+                          Dengan Kak Dinda • Rabu & Sabtu
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700">
+                        Nilai +18 poin
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between rounded-xl bg-white p-3">
+                      <div>
+                        <p className="text-xs font-medium text-slate-700">
+                          Mengaji & Tahsin
+                        </p>
+                        <p className="text-[11px] text-slate-500">
+                          Dengan Ust. Rafi • 3x seminggu
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+                        Hafalan naik 2 juz
+                      </span>
+                    </div>
+                    <div className="rounded-xl bg-blue-600 p-3 text-xs text-white">
+                      Orang tua mendapat ringkasan belajar + foto aktivitas
+                      setiap selesai les. Tanpa repot tanya-tanya lagi.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        );
+      }
+
+      function SectionWrapper({ id, title, subtitle, children }) {
+        return (
+          <section id={id} className="border-t border-slate-100 bg-white">
+            <div className="mx-auto max-w-6xl px-4 py-10 sm:py-12">
+              <div className="mb-6 max-w-2xl">
+                <h2 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+                  {title}
+                </h2>
+                {subtitle && (
+                  <p className="mt-2 text-sm text-slate-600">{subtitle}</p>
+                )}
+              </div>
+              {children}
+            </div>
+          </section>
+        );
+      }
+
+      function AdvantagesSection() {
+        const items = [
+          "Guru terpilih & berpengalaman (seleksi ketat + rating)",
+          "Datang ke rumah murid, jadwal fleksibel",
+          "Platform digital untuk orang tua & murid",
+          "Report belajar lengkap tiap sesi (foto + catatan)",
+          "Bisa ganti guru jika kurang cocok",
+          "Bayar setelah les selesai, transparan",
+          "Bonus 1 jam gratis (min. 10 jam)",
+        ];
+        return (
+          <SectionWrapper
+            id="keunggulan"
+            title="Kenapa pilih YakinPintar?"
+            subtitle="Kami menggabungkan sentuhan guru privat terbaik dengan kemudahan platform digital."
+          >
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {items.map((text, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-start gap-3 rounded-2xl bg-slate-50 p-4"
+                >
+                  <div className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+                    {idx + 1}
+                  </div>
+                  <p className="text-sm text-slate-700">{text}</p>
+                </div>
+              ))}
+            </div>
+          </SectionWrapper>
+        );
+      }
+
+      function ProgramsSection() {
+        const programs = [
+          { title: "Preschool & TK", desc: "Calistung, motorik halus, dan fun learning." },
+          { title: "SD", desc: "Pendampingan PR, Matematika, Bahasa Indonesia, IPA." },
+          { title: "SMP", desc: "Persiapan ujian, Matematika, IPA, Bahasa Inggris." },
+          { title: "SMA/SMK", desc: "IPA & IPS, UTBK, ujian sekolah dan masuk PTN." },
+          { title: "Mengaji & Tahsin", desc: "Iqra, tahsin, hafalan, adab sehari-hari." },
+          { title: "Kursus", desc: "Bahasa Inggris, Komputer, Coding, dan lainnya." },
+        ];
+        return (
+          <SectionWrapper
+            id="program"
+            title="Program les untuk semua jenjang"
+            subtitle="Pilih jenjang dan kebutuhan belajar anak, kami siapkan guru yang tepat."
+          >
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {programs.map((p) => (
+                <div
+                  key={p.title}
+                  className="flex flex-col justify-between rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100"
+                >
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-900">
+                      {p.title}
+                    </h3>
+                    <p className="mt-1 text-xs text-slate-600">{p.desc}</p>
+                  </div>
+                  <button className="mt-3 inline-flex w-max rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                    Lihat detail
+                  </button>
+                </div>
+              ))}
+            </div>
+          </SectionWrapper>
+        );
+      }
+
+      function HowItWorksSection() {
+        const steps = [
+          "Isi formulir / chat WhatsApp",
+          "Tim YakinPintar rekomendasikan guru terbaik",
+          "Jadwalkan les pertama (bisa free trial)",
+          "Bayar setelah les selesai + dapat report",
+        ];
+        return (
+          <SectionWrapper
+            id="cara-kerja"
+            title="Cara kerja yang super simpel"
+            subtitle="4 langkah mudah dari daftar sampai report belajar anak di tangan Anda."
+          >
+            <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {steps.map((step, index) => (
+                <li
+                  key={index}
+                  className="flex flex-col gap-2 rounded-2xl bg-slate-50 p-4"
+                >
+                  <span className="h-8 w-8 rounded-full bg-blue-600 text-center text-sm font-bold text-white">
+                    {index + 1}
+                  </span>
+                  <p className="text-sm text-slate-700">{step}</p>
+                </li>
+              ))}
+            </ol>
+          </SectionWrapper>
+        );
+      }
+
+      function TutorsHighlightSection() {
+        const tutors = [
+          { name: "Kak Dinda", subject: "Matematika SMP", rating: 4.9 },
+          { name: "Kak Rizal", subject: "Fisika SMA", rating: 4.8 },
+          { name: "Ust. Rafi", subject: "Mengaji & Tahsin", rating: 5.0 },
+        ];
+        return (
+          <SectionWrapper
+            id="guru"
+            title="Guru-guru terbaik siap datang ke rumah"
+            subtitle="Tutor muda, komunikatif, dan sudah melalui proses seleksi & training."
+          >
+            <div className="grid gap-4 sm:grid-cols-3">
+              {tutors.map((tutor) => (
+                <div
+                  key={tutor.name}
+                  className="flex flex-col items-center rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100"
+                >
+                  <div className="mb-2 h-16 w-16 rounded-full bg-blue-100" />
+                  <div className="text-sm font-semibold text-slate-900">
+                    {tutor.name}
+                  </div>
+                  <div className="text-xs text-slate-500">{tutor.subject}</div>
+                  <div className="mt-1 text-xs text-amber-500">
+                    ⭐ {tutor.rating.toFixed(1)} / 5.0
+                  </div>
+                </div>
+              ))}
+            </div>
+          </SectionWrapper>
+        );
+      }
+
+      function TestimonialsSection() {
+        const testimonials = [
+          {
+            name: "Ibu Rina, Ilir Barat",
+            quote:
+              "Anak saya dari ranking 25 jadi 5 besar dalam 1 semester. Report belajar sangat membantu.",
+          },
+          {
+            name: "Pak Ardi, Seberang Ulu",
+            quote:
+              "Guru datang tepat waktu dan anak jadi lebih semangat belajar matematika.",
+          },
+        ];
+        return (
+          <SectionWrapper
+            id="testimoni"
+            title="Cerita orang tua & murid"
+            subtitle="Beberapa testimoni dari keluarga yang sudah merasakan manfaat YakinPintar."
+          >
+            <div className="grid gap-4 md:grid-cols-2">
+              {testimonials.map((t) => (
+                <figure
+                  key={t.name}
+                  className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-700"
+                >
+                  <p>“{t.quote}”</p>
+                  <figcaption className="mt-3 text-xs font-semibold text-slate-900">
+                    {t.name}
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          </SectionWrapper>
+        );
+      }
+
+      function ServiceAreaSection() {
+        return (
+          <SectionWrapper
+            id="lokasi"
+            title="Area layanan YakinPintar"
+            subtitle="Saat ini fokus di Palembang dan sekitarnya, bertahap ekspansi ke kota lain."
+          >
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="rounded-3xl bg-slate-100 p-6 text-sm text-slate-700">
+                <p className="font-semibold text-slate-900">
+                  Palembang & Sekitarnya
+                </p>
+                <p className="mt-2">
+                  Kami melayani seluruh area Palembang: Ilir Barat, Ilir Timur,
+                  Seberang Ulu, dan kecamatan lain. Untuk area di luar kota,
+                  silakan konsultasi via WhatsApp.
+                </p>
+                <ul className="mt-3 list-disc pl-5 text-xs">
+                  <li>Les datang ke rumah (offline)</li>
+                  <li>Les online via Zoom/Meet (opsional)</li>
+                  <li>Free konsultasi kebutuhan belajar anak</li>
+                </ul>
+              </div>
+              <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-100">
+                <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+                  Coming Soon
+                </p>
+                <p className="mt-1 text-sm text-slate-700">
+                  Ekspansi ke kota lain di Indonesia.
+                </p>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-700">
+                  <span className="rounded-full bg-slate-50 px-3 py-1">
+                    Jakarta
+                  </span>
+                  <span className="rounded-full bg-slate-50 px-3 py-1">
+                    Bandung
+                  </span>
+                  <span className="rounded-full bg-slate-50 px-3 py-1">
+                    Surabaya
+                  </span>
+                  <span className="rounded-full bg-slate-50 px-3 py-1">
+                    Yogyakarta
+                  </span>
+                </div>
+              </div>
+            </div>
+          </SectionWrapper>
+        );
+      }
+
+      function PromoSection({ onDaftarMurid }) {
+        return (
+          <SectionWrapper
+            id="promo"
+            title="Promo spesial keluarga baru"
+            subtitle="Daftar sekarang untuk bonus jam les tambahan & konsultasi gratis."
+          >
+            <div className="flex flex-col items-start justify-between gap-4 rounded-3xl bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-6 text-white md:flex-row md:items-center">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-wide">
+                  Limited time offer
+                </p>
+                <p className="mt-1 text-lg font-bold">
+                  Bonus 2 jam les + free trial 1x
+                </p>
+                <p className="mt-1 text-xs text-blue-100">
+                  Berlaku untuk pendaftaran minimal 10 jam paket les. S&K
+                  berlaku.
+                </p>
+              </div>
+              <button
+                onClick={onDaftarMurid}
+                className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-blue-700 shadow-sm hover:bg-blue-50"
+              >
+                Daftar Sekarang
+              </button>
+            </div>
+          </SectionWrapper>
+        );
+      }
+
+      function DoubleCTASection({ onDaftarMurid, onDaftarGuru }) {
+        return (
+          <SectionWrapper
+            id="cta"
+            title="Siap mulai bersama YakinPintar?"
+            subtitle="Isi data singkat, tim kami akan menghubungi Anda maksimal 1x24 jam."
+          >
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="rounded-3xl bg-slate-50 p-5">
+                <h3 className="text-sm font-semibold text-slate-900">
+                  Orang Tua / Wali Murid
+                </h3>
+                <p className="mt-1 text-xs text-slate-600">
+                  Daftarkan anak Anda untuk les privat. Gratis konsultasi
+                  kebutuhan belajar.
+                </p>
+                <button
+                  onClick={onDaftarMurid}
+                  className="mt-4 w-full rounded-full bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+                >
+                  Isi Form Daftar Les
+                </button>
+              </div>
+              <div className="rounded-3xl bg-slate-50 p-5">
+                <h3 className="text-sm font-semibold text-slate-900">
+                  Mahasiswa / Guru
+                </h3>
+                <p className="mt-1 text-xs text-slate-600">
+                  Jadi guru YakinPintar dan dapatkan penghasilan tambahan
+                  fleksibel 5–15 juta/bulan.
+                </p>
+                <button
+                  onClick={onDaftarGuru}
+                  className="mt-4 w-full rounded-full border border-blue-600 px-4 py-2.5 text-sm font-semibold text-blue-600 hover:bg-blue-50"
+                >
+                  Daftar Jadi Guru
+                </button>
+              </div>
+            </div>
+          </SectionWrapper>
+        );
+      }
+
+      function Footer() {
+        return (
+          <footer className="border-t border-slate-100 bg-white">
+            <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="font-semibold text-slate-800">YakinPintar</div>
+                <div className="mt-1">
+                  Les privat datang ke rumah & online. Fokus di Palembang,
+                  bersiap ekspansi nasional.
+                </div>
+              </div>
+              <div className="space-x-4">
+                <a
+                  href="https://wa.me/6281234567890"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-blue-600"
+                >
+                  WhatsApp
+                </a>
+                <span>·</span>
+                <a
+                  href="#"
+                  className="hover:text-blue-600"
+                >
+                  Instagram
+                </a>
+                <span>·</span>
+                <a
+                  href="#"
+                  className="hover:text-blue-600"
+                >
+                  TikTok
+                </a>
+              </div>
+              <div>© 2025 YakinPintar. All rights reserved.</div>
+            </div>
+          </footer>
+        );
+      }
+
+      const API_BASE = "http://localhost:4000/api";
+
+      async function postJson(path, body) {
+        const res = await fetch(`${API_BASE}${path}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          const message = data.message || "Terjadi kesalahan, silakan coba lagi.";
+          throw new Error(message);
+        }
+        return res.json();
+      }
+
+      function DaftarMuridPage({ onBack }) {
+        const [form, setForm] = useState({
+          parentName: "",
+          whatsapp: "",
+          studentName: "",
+          grade: "",
+          program: "",
+          city: "",
+          area: "",
+          schedulePreference: "",
+        });
+        const [submitted, setSubmitted] = useState(false);
+        const [submitting, setSubmitting] = useState(false);
+        const [error, setError] = useState("");
+
+        const handleChange = (e) => {
+          const { name, value } = e.target;
+          setForm((prev) => ({ ...prev, [name]: value }));
+        };
+
+        const handleSubmit = async (e) => {
+          e.preventDefault();
+          setError("");
+          setSubmitting(true);
+          try {
+            await postJson("/leads/student", form);
+            setSubmitted(true);
+          } catch (err) {
+            console.error(err);
+            setError(err.message);
+          } finally {
+            setSubmitting(false);
+          }
+        };
+
+        return (
+          <main className="min-h-screen bg-slate-50">
+            <div className="mx-auto max-w-3xl px-4 py-8">
+              <button
+                onClick={onBack}
+                className="mb-4 text-xs font-semibold text-blue-600 hover:underline"
+              >
+                ← Kembali ke Beranda
+              </button>
+              <h1 className="text-2xl font-bold text-slate-900">
+                Form Pendaftaran Les Privat
+              </h1>
+              <p className="mt-2 text-sm text-slate-600">
+                Isi data singkat di bawah ini. Tim YakinPintar akan menghubungi
+                Anda maksimal 1x24 jam melalui WhatsApp.
+              </p>
+              {submitted && (
+                <div className="mt-4 rounded-xl bg-emerald-50 p-3 text-xs text-emerald-700">
+                  Terima kasih! Data Anda sudah kami terima. Tim kami akan
+                  segera menghubungi melalui WhatsApp.
+                </div>
+              )}
+              {error && !submitted && (
+                <div className="mt-4 rounded-xl bg-red-50 p-3 text-xs text-red-700">
+                  {error}
+                </div>
+              )}
+              <form
+                onSubmit={handleSubmit}
+                className="mt-6 space-y-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100"
+              >
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="text-xs font-medium text-slate-700">
+                      Nama Orang Tua / Wali
+                    </label>
+                    <input
+                      type="text"
+                      name="parentName"
+                      required
+                      value={form.parentName}
+                      onChange={handleChange}
+                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-700">
+                      Nomor WhatsApp Aktif
+                    </label>
+                    <input
+                      type="tel"
+                      name="whatsapp"
+                      required
+                      value={form.whatsapp}
+                      onChange={handleChange}
+                      placeholder="contoh: 08xxxxxxxxxx"
+                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="text-xs font-medium text-slate-700">
+                      Nama Anak
+                    </label>
+                    <input
+                      type="text"
+                      name="studentName"
+                      required
+                      value={form.studentName}
+                      onChange={handleChange}
+                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-700">
+                      Jenjang Kelas
+                    </label>
+                    <select
+                      name="grade"
+                      required
+                      value={form.grade}
+                      onChange={handleChange}
+                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    >
+                      <option value="">Pilih jenjang</option>
+                      <option value="Preschool/TK">Preschool / TK</option>
+                      <option value="SD">SD</option>
+                      <option value="SMP">SMP</option>
+                      <option value="SMA/SMK">SMA / SMK</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-700">
+                    Program Les
+                  </label>
+                  <input
+                    type="text"
+                    name="program"
+                    required
+                    value={form.program}
+                    onChange={handleChange}
+                    placeholder="contoh: Matematika SD, Mengaji, Bahasa Inggris"
+                    className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="text-xs font-medium text-slate-700">
+                      Kota
+                    </label>
+                    <input
+                      type="text"
+                      name="city"
+                      required
+                      value={form.city}
+                      onChange={handleChange}
+                      placeholder="contoh: Palembang"
+                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-700">
+                      Area / Kecamatan
+                    </label>
+                    <input
+                      type="text"
+                      name="area"
+                      required
+                      value={form.area}
+                      onChange={handleChange}
+                      placeholder="contoh: Ilir Barat, Seberang Ulu"
+                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-700">
+                    Preferensi Jadwal
+                  </label>
+                  <textarea
+                    name="schedulePreference"
+                    rows={3}
+                    required
+                    value={form.schedulePreference}
+                    onChange={handleChange}
+                    placeholder="contoh: Senin & Rabu jam 16.00–18.00, minimal 2x seminggu"
+                    className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full rounded-full bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {submitting ? "Mengirim..." : "Kirim Pendaftaran"}
+                </button>
+              </form>
+            </div>
+          </main>
+        );
+      }
+
+      function DaftarGuruPage({ onBack }) {
+        const [form, setForm] = useState({
+          fullName: "",
+          whatsapp: "",
+          email: "",
+          university: "",
+          subjects: "",
+          city: "",
+          area: "",
+          availability: "",
+        });
+        const [submitted, setSubmitted] = useState(false);
+        const [submitting, setSubmitting] = useState(false);
+        const [error, setError] = useState("");
+
+        const handleChange = (e) => {
+          const { name, value } = e.target;
+          setForm((prev) => ({ ...prev, [name]: value }));
+        };
+
+        const handleSubmit = async (e) => {
+          e.preventDefault();
+          setError("");
+          setSubmitting(true);
+          try {
+            await postJson("/leads/tutor", form);
+            setSubmitted(true);
+          } catch (err) {
+            console.error(err);
+            setError(err.message);
+          } finally {
+            setSubmitting(false);
+          }
+        };
+
+        return (
+          <main className="min-h-screen bg-slate-50">
+            <div className="mx-auto max-w-3xl px-4 py-8">
+              <button
+                onClick={onBack}
+                className="mb-4 text-xs font-semibold text-blue-600 hover:underline"
+              >
+                ← Kembali ke Beranda
+              </button>
+              <h1 className="text-2xl font-bold text-slate-900">
+                Form Pendaftaran Guru YakinPintar
+              </h1>
+              <p className="mt-2 text-sm text-slate-600">
+                Isi data berikut untuk bergabung sebagai tutor. Kami akan
+                melakukan seleksi dan menghubungi Anda melalui WhatsApp.
+              </p>
+              {submitted && (
+                <div className="mt-4 rounded-xl bg-emerald-50 p-3 text-xs text-emerald-700">
+                  Terima kasih! Data Anda sudah kami terima. Tim kami akan
+                  menghubungi untuk proses seleksi berikutnya.
+                </div>
+              )}
+              {error && !submitted && (
+                <div className="mt-4 rounded-xl bg-red-50 p-3 text-xs text-red-700">
+                  {error}
+                </div>
+              )}
+              <form
+                onSubmit={handleSubmit}
+                className="mt-6 space-y-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100"
+              >
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="text-xs font-medium text-slate-700">
+                      Nama Lengkap
+                    </label>
+                    <input
+                      type="text"
+                      name="fullName"
+                      required
+                      value={form.fullName}
+                      onChange={handleChange}
+                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-700">
+                      Nomor WhatsApp
+                    </label>
+                    <input
+                      type="tel"
+                      name="whatsapp"
+                      required
+                      value={form.whatsapp}
+                      onChange={handleChange}
+                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="text-xs font-medium text-slate-700">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      required
+                      value={form.email}
+                      onChange={handleChange}
+                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-700">
+                      Universitas / Latar Belakang
+                    </label>
+                    <input
+                      type="text"
+                      name="university"
+                      required
+                      value={form.university}
+                      onChange={handleChange}
+                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-700">
+                    Mata Pelajaran yang Dikuasai
+                  </label>
+                  <input
+                    type="text"
+                    name="subjects"
+                    required
+                    value={form.subjects}
+                    onChange={handleChange}
+                    placeholder="contoh: Matematika SD-SMP, Fisika SMA, Mengaji"
+                    className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="text-xs font-medium text-slate-700">
+                      Kota
+                    </label>
+                    <input
+                      type="text"
+                      name="city"
+                      required
+                      value={form.city}
+                      onChange={handleChange}
+                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-700">
+                      Area Mengajar
+                    </label>
+                    <input
+                      type="text"
+                      name="area"
+                      required
+                      value={form.area}
+                      onChange={handleChange}
+                      placeholder="contoh: Ilir Barat, Seberang Ulu"
+                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-700">
+                    Ketersediaan Waktu Mengajar
+                  </label>
+                  <textarea
+                    name="availability"
+                    rows={3}
+                    required
+                    value={form.availability}
+                    onChange={handleChange}
+                    placeholder="contoh: Senin–Jumat jam 16.00–20.00, Sabtu–Minggu fleksibel"
+                    className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full rounded-full bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {submitting ? "Mengirim..." : "Kirim Pendaftaran"}
+                </button>
+              </form>
+            </div>
+          </main>
+        );
+      }
+
+      function LandingPage({ onDaftarMurid, onDaftarGuru }) {
+        return (
+          <main>
+            <HeroSection
+              onDaftarMurid={onDaftarMurid}
+              onDaftarGuru={onDaftarGuru}
+            />
+            <AdvantagesSection />
+            <ProgramsSection />
+            <HowItWorksSection />
+            <TutorsHighlightSection />
+            <TestimonialsSection />
+            <ServiceAreaSection />
+            <PromoSection onDaftarMurid={onDaftarMurid} />
+            <DoubleCTASection
+              onDaftarMurid={onDaftarMurid}
+              onDaftarGuru={onDaftarGuru}
+            />
+          </main>
+        );
+      }
+
+      function App() {
+        const [page, setPage] = useState("landing");
+
+        const handleNavigate = (target) => {
+          setPage(target);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        };
+
+        let content;
+        if (page === "daftarMurid") {
+          content = <DaftarMuridPage onBack={() => handleNavigate("landing")} />;
+        } else if (page === "daftarGuru") {
+          content = <DaftarGuruPage onBack={() => handleNavigate("landing")} />;
+        } else {
+          content = (
+            <LandingPage
+              onDaftarMurid={() => handleNavigate("daftarMurid")}
+              onDaftarGuru={() => handleNavigate("daftarGuru")}
+            />
+          );
+        }
+
+        return (
+          <div className="flex min-h-screen flex-col">
+            <Navbar currentPage={page} onNavigate={handleNavigate} />
+            {content}
+            <Footer />
+          </div>
+        );
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById("root"));
+      root.render(<App />);
+    </script>
+  </body>
+</html>
+
