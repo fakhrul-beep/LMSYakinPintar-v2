@@ -1,22 +1,14 @@
 import express from "express";
 import multer from "multer";
-import path from "path";
+import path from "node:path";
 import * as adminController from "../controllers/admin.controller.js";
 import { requireAuth, requireRole } from "../middleware/auth.middleware.js";
 import { validateRegister, logUserCreation } from "../middleware/security.middleware.js";
 
 const router = express.Router();
 
-// Multer configuration
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "public/uploads/");
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname));
-  },
-});
+// Multer configuration - Use Memory Storage for Cloudflare Workers
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage,
