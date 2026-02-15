@@ -6,8 +6,8 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import mongoSanitize from "express-mongo-sanitize";
 import hpp from "hpp";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -55,7 +55,7 @@ const limiter = rateLimit({
 app.use("/api", limiter);
 
 app.use(express.json({ limit: "10kb" }));
-// app.use("/uploads", express.static(path.join(__dirname, "../public/uploads")));
+app.use("/uploads", express.static(path.join(__dirname, "../public/uploads")));
 
 // Data sanitization against NoSQL query injection
 // app.use(mongoSanitize()); // Removed for Supabase migration
