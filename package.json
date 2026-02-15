@@ -6,9 +6,9 @@
   "main": "backend/src/server.js",
   "scripts": {
     "start": "node backend/src/server.js",
+    "build": "cd frontend && npm install && npm run build",
     "backend": "cd backend && npm start",
-    "frontend": "cd frontend && npm run dev",
-    "build:frontend": "cd frontend && npm install && npm run build"
+    "frontend": "cd frontend && npm run dev"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.95.3",

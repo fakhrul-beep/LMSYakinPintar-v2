@@ -57,6 +57,18 @@ app.use("/api", limiter);
 app.use(express.json({ limit: "10kb" }));
 app.use("/uploads", express.static(path.join(__dirname, "../public/uploads")));
 
+// Serve Frontend in Production
+if (process.env.NODE_ENV === "production") {
+  const frontendPath = path.join(__dirname, "../../frontend/dist");
+  app.use(express.static(frontendPath));
+  
+  app.get("*", (req, res, next) => {
+    // If request is for API, don't serve index.html
+    if (req.url.startsWith("/api")) return next();
+    res.sendFile(path.join(frontendPath, "index.html"));
+  });
+}
+
 // Data sanitization against NoSQL query injection
 // app.use(mongoSanitize()); // Removed for Supabase migration
 
