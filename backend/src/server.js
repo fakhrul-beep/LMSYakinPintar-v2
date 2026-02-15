@@ -4,6 +4,25 @@ import app from "./app.js";
 import logger from "./utils/logger.js";
 import rateLimit from "express-rate-limit";
 import supabase from "./config/supabase.js"; // Import Supabase client
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Ensure required directories exist
+const requiredDirs = [
+  path.join(__dirname, '../logs'),
+  path.join(__dirname, '../public/uploads')
+];
+
+requiredDirs.forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+    console.log(`Created missing directory: ${dir}`);
+  }
+});
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -22,16 +41,14 @@ const PORT = process.env.PORT || 4000;
 export default app;
 
 async function start() {
-  if (process.env.NODE_ENV === 'production') return; // Don't run app.listen in production (Vercel handles it)
   try {
     // Check Supabase connection (lightweight check)
-    // We can't easily "ping" Supabase without a query, but the client init is enough to start.
     if (supabase) {
-        logger.info("Supabase client initialized");
+      logger.info("Supabase client initialized");
     }
 
     app.listen(PORT, () => {
-      logger.info(`Server listening on port ${PORT}`);
+      logger.info(`Server listening on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
     });
   } catch (err) {
     logger.error("Failed to start server", err);

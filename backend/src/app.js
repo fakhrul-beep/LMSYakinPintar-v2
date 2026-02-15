@@ -29,6 +29,16 @@ import logger from "./utils/logger.js";
 
 const app = express();
 
+// Health Check
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    env: process.env.NODE_ENV
+  });
+});
+
 // Security Middleware
 app.use(
   helmet({
