@@ -95,18 +95,33 @@ app.use((req, res, next) => {
 // Routes
 app.get("/api/health", async (req, res) => {
   try {
+    const health = {
+      status: "ok",
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      env: process.env.NODE_ENV,
+      database: "unknown"
+    };
+
+    if (!supabase) {
+      health.database = "disconnected (Missing Environment Variables)";
+      return res.status(503).json(health);
+    }
+
     const { data, error } = await supabase.from("users").select("id").limit(1);
-    if (error) throw error;
-    res.json({ 
-      status: "ok", 
-      message: "YakinPintar API is running",
-      database: "connected"
-    });
+    
+    if (error) {
+      health.database = `disconnected (${error.message})`;
+      return res.status(503).json(health);
+    }
+
+    health.database = "connected";
+    res.json(health);
   } catch (err) {
     logger.error("Health check failed", err);
     res.status(503).json({ 
       status: "error", 
-      message: "Service unavailable",
+      message: err.message,
       database: "disconnected"
     });
   }

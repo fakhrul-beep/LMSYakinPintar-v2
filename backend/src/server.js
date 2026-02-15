@@ -40,7 +40,10 @@ async function start() {
     if (supabase) {
       logger.info("Supabase client initialized successfully");
     } else {
-      logger.warn("Supabase client NOT initialized. Some features will be broken.");
+      const missing = [];
+      if (!process.env.SUPABASE_URL) missing.push("SUPABASE_URL");
+      if (!process.env.SUPABASE_KEY) missing.push("SUPABASE_KEY");
+      logger.warn(`Supabase client NOT initialized. Missing: ${missing.join(", ")}`);
     }
 
     app.listen(PORT, () => {
