@@ -73,7 +73,8 @@ const NetworkMonitor = () => {
         // 3. API Reachability
         const apiStart = Date.now();
         try {
-          const apiRes = await fetch(import.meta.env.VITE_API_URL + '/health' || 'http://localhost:5000/api/health');
+          const apiBase = import.meta.env.VITE_API_URL || '/api';
+          const apiRes = await fetch(`${apiBase}/health`);
           if (apiRes.ok) {
             results.api = 'Terhubung';
           } else {
