@@ -55,7 +55,7 @@ const limiter = rateLimit({
 app.use("/api", limiter);
 
 app.use(express.json({ limit: "10kb" }));
-app.use("/uploads", express.static(path.join(__dirname, "../public/uploads")));
+// app.use("/uploads", express.static(path.join(__dirname, "../public/uploads")));
 
 // Data sanitization against NoSQL query injection
 // app.use(mongoSanitize()); // Removed for Supabase migration
