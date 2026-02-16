@@ -22,6 +22,7 @@ import leadRoutes from "./routes/leads.js";
 import adminRoutes from "./routes/admin.js";
 import userRoutes from "./routes/users.js";
 import programRoutes from "./routes/programs.js";
+import specializationRoutes from "./routes/specializations.js";
 import supabase from "./config/supabase.js";
 import { globalErrorHandler } from "./middleware/error.middleware.js";
 import { AppError } from "./utils/AppError.js";
@@ -137,6 +138,7 @@ app.use("/api/leads", leadRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/programs", programRoutes);
+app.use("/api/spesialisasi", specializationRoutes);
 
 // 404 handler Handler
 app.all("*", (req, res, next) => {

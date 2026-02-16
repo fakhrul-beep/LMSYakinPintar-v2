@@ -137,7 +137,8 @@ export default function TutorListPage() {
       }
 
       const response = await api.get(url);
-      setTutors(response.data);
+      const data = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+      setTutors(data);
     } catch (err) {
       console.error("Failed to fetch tutors:", err);
       setError(err.friendlyMessage || "Gagal memuat daftar guru. Silakan coba lagi nanti.");
@@ -151,6 +152,7 @@ export default function TutorListPage() {
   }, [fetchTutors]);
 
   const filteredTutors = useMemo(() => {
+    if (!Array.isArray(tutors)) return [];
     return tutors.filter(tutor => 
       tutor.user?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       tutor.subjects?.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()))

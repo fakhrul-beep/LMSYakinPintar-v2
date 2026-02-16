@@ -110,7 +110,7 @@ const StudentDashboardPage = () => {
   const fetchBookings = async (silent = false) => {
     if (!silent) setBookingLoading(true);
     try {
-      const response = await api.get('/bookings/mine');
+      const response = await api.get('bookings/mine');
       setBookings(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error("Error fetching bookings:", error);
@@ -142,7 +142,7 @@ const StudentDashboardPage = () => {
   const fetchProfile = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/users/profile');
+      const response = await api.get('users/profile');
       const userData = response.data?.data;
       if (!userData) throw new Error("Data profil tidak ditemukan");
       
@@ -176,7 +176,7 @@ const StudentDashboardPage = () => {
     e.preventDefault();
     setSaving(true);
     try {
-      const response = await api.put('/users/profile', {
+      const response = await api.put('users/profile', {
         name: profile.name,
         whatsapp: profile.whatsapp,
         profileData: {

@@ -10,10 +10,16 @@ let supabase;
 
 if (!supabaseUrl || !supabaseKey) {
   console.error("CRITICAL ERROR: Missing Supabase URL or Key in environment variables!");
-  // Kita tidak throw error di sini agar server tetap bisa jalan untuk pengecekan /health
-  // Tapi fitur yang butuh database akan gagal.
+  console.error("Please ensure SUPABASE_URL and SUPABASE_KEY are set in your .env file or production environment.");
+  console.error("Current SUPABASE_URL:", supabaseUrl ? "Defined" : "UNDEFINED");
+  console.error("Current SUPABASE_KEY:", supabaseKey ? "Defined" : "UNDEFINED");
 } else {
-  supabase = createClient(supabaseUrl, supabaseKey);
+  try {
+    supabase = createClient(supabaseUrl, supabaseKey);
+    console.log("Supabase client initialized successfully.");
+  } catch (error) {
+    console.error("FAILED to initialize Supabase client:", error.message);
+  }
 }
 
 export default supabase;

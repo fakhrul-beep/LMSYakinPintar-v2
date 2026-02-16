@@ -7,7 +7,7 @@ import api from "../utils/api";
 import { 
   Search, CheckCircle, XCircle, Clock, 
   ChevronLeft, ChevronRight, Download, FileText, 
-  DollarSign, User, Calendar, Filter, Eye
+  Wallet, User, Calendar, Filter, Eye
 } from "lucide-react";
 
 export default function AdminPaymentsPage() {
@@ -23,7 +23,7 @@ export default function AdminPaymentsPage() {
   const fetchPayments = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get(`/admin/payments?page=${page}&search=${search}&status=${filterStatus}`);
+      const res = await api.get(`admin/payments?page=${page}&search=${search}&status=${filterStatus}`);
       setPayments(res.data.data.payments);
       setTotalPages(res.data.data.pagination.pages);
     } catch (err) {
@@ -41,7 +41,7 @@ export default function AdminPaymentsPage() {
   const handleUpdateStatus = async (id, status) => {
     const loadingToast = toast.loading("Memperbarui status pembayaran...");
     try {
-      await api.patch(`/admin/payments/${id}/status`, { status });
+      await api.patch(`admin/payments/${id}/status`, { status });
       toast.success(`Pembayaran berhasil di-${status}`, { id: loadingToast });
       fetchPayments();
     } catch (err) {

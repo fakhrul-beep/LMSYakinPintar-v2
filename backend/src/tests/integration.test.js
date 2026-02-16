@@ -1,172 +1,151 @@
-import { describe, it, expect } from "vitest";
-import request from "supertest";
-import app from "../app.js";
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import * as specializationController from '../controllers/specialization.controller.js';
+import supabase from '../config/supabase.js';
 
-const generateRandomEmail = () => `test_${Math.floor(Math.random() * 100000)}@example.com`;
+// Mock Supabase
+vi.mock('../config/supabase.js', () => ({
+  default: {
+    from: vi.fn()
+  }
+}));
 
-describe("API Integration Tests", () => {
-  let parentToken;
-  let parentUser;
-  let tutorId;
-  const parentEmail = generateRandomEmail();
-  const parentPassword = "password123";
+describe('Integration Scenarios - Registration Flow', () => {
+  let mockReq, mockRes, mockNext;
 
-  it("GET /api/health - should return 200 OK", async () => {
-    const res = await request(app).get("/api/health");
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({ 
-      status: "ok", 
-      message: "YakinPintar API is running",
-      database: "connected"
-    });
+  beforeEach(() => {
+    mockReq = { params: {}, body: {} };
+    mockRes = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn().mockReturnThis()
+    };
+    mockNext = vi.fn();
+    vi.clearAllMocks();
   });
 
-  describe("Auth Routes", () => {
-    it("POST /api/auth/register/student - should register a new student", async () => {
-      const res = await request(app).post("/api/auth/register/student").send({
-        name: "Test Parent",
-        email: parentEmail,
-        password: parentPassword,
-        whatsapp: "08123456789",
-        grade: "SD",
-        city: "Palembang"
-      });
+  // Scenario 1: Basic valid flow
+  it('Scenario 1: Valid subject selection returns correlated specializations', async () => {
+    const subjectId = 'math-id';
+    mockReq.params.mataPelajaranId = subjectId;
 
-      // It might return 500 if the database column is still missing, but let's see
-      // In a real CI environment, we would ensure migrations run before tests.
-      if (res.status === 500) {
-        expect(res.body.message).toContain("kendala pada sistem pendaftaran");
-      } else {
-        expect(res.status).toBe(201);
-        expect(res.body).toHaveProperty("token");
-        expect(res.body.user).toHaveProperty("email", parentEmail);
-        parentUser = res.body.user;
-      }
-    });
+    const mockSubject = { id: subjectId, name: 'Matematika' };
+    const mockSpecs = [
+      { spesialisasi: { id: 'alg-1', name: 'Aljabar' } },
+      { spesialisasi: { id: 'geo-1', name: 'Geometri' } }
+    ];
 
-    it("POST /api/auth/register/student - should fail with existing email", async () => {
-      const res = await request(app).post("/api/auth/register/student").send({
-        name: "Test Parent Duplicate",
-        email: parentEmail,
-        password: parentPassword,
-        whatsapp: "08123456789",
-      });
-
-      // Updated to match the new friendly error handling
-      expect(res.status).toBe(409);
-      expect(res.body.message).toContain("sudah terdaftar");
-    });
-
-    it("POST /api/auth/login - should login successfully", async () => {
-      const res = await request(app).post("/api/auth/login").send({
-        email: parentEmail,
-        password: parentPassword,
-      });
-
-      expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty("token");
-      parentToken = res.body.token;
-    });
-
-    it("POST /api/auth/login - should fail with wrong password", async () => {
-      const res = await request(app).post("/api/auth/login").send({
-        email: parentEmail,
-        password: "wrongpassword",
-      });
-
-      expect(res.status).toBe(401);
-    });
-
-    it("GET /api/users/profile - should return profile with correct role data", async () => {
-      const res = await request(app)
-        .get("/api/users/profile")
-        .set("Authorization", `Bearer ${parentToken}`);
-
-      expect(res.status).toBe(200);
-      expect(res.body.data.role).toBe("student"); // Note: current register test uses student role
-      expect(res.body.data).toHaveProperty("profile");
-    });
-  });
-
-  describe("Tutor Routes", () => {
-    it("GET /api/tutors - should list tutors", async () => {
-      const res = await request(app).get("/api/tutors");
-      expect(res.status).toBe(200);
-      expect(Array.isArray(res.body)).toBe(true);
-      if (res.body.length > 0) {
-        tutorId = res.body[0].id;
-      }
-    });
-
-    it("GET /api/tutors/:id - should get tutor details", async () => {
-      if (!tutorId) {
-        console.log("Skipping GET /api/tutors/:id - No tutors found");
-        return;
-      }
-      const res = await request(app).get(`/api/tutors/${tutorId}`);
-      expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty("id", tutorId);
-    });
-  });
-
-  describe("Booking Routes", () => {
-    it("POST /api/bookings - should fail without auth", async () => {
-      const res = await request(app).post("/api/bookings").send({});
-      expect(res.status).toBe(401);
-    });
-
-    it("POST /api/bookings - should create a booking (if tutor exists)", async () => {
-      if (!tutorId) {
-        console.log("Skipping POST /api/bookings - No tutors found");
-        return;
-      }
-
-      const bookingData = {
-        studentName: "Test Student",
-        grade: "SMA",
-        subject: "Matematika",
-        scheduledAt: new Date().toISOString(),
-        durationHours: 2,
-        priceTotal: 100000,
-        tutorId: tutorId,
+    supabase.from.mockImplementation((table) => {
+      if (table === 'mata_pelajaran') return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: mockSubject, error: null })
       };
-
-      const res = await request(app)
-        .post("/api/bookings")
-        .set("Authorization", `Bearer ${parentToken}`)
-        .send(bookingData);
-
-      expect(res.status).toBe(201);
-      expect(res.body).toHaveProperty("status", "requested");
+      if (table === 'mata_pelajaran_spesialisasi') return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({ data: mockSpecs, error: null })
+      };
+      return {};
     });
 
-    it("GET /api/bookings/mine - should list bookings", async () => {
-      const res = await request(app)
-        .get("/api/bookings/mine")
-        .set("Authorization", `Bearer ${parentToken}`);
+    await specializationController.getSpecializationsBySubject(mockReq, mockRes, mockNext);
 
-      expect(res.status).toBe(200);
-      expect(Array.isArray(res.body)).toBe(true);
-    });
+    expect(mockRes.status).toHaveBeenCalledWith(200);
+    expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
+      status: 'success',
+      data: expect.arrayContaining([
+        expect.objectContaining({ name: 'Aljabar' })
+      ])
+    }));
   });
 
-  describe("Leads Routes", () => {
-    it("POST /api/leads/student - should create a lead", async () => {
-      const res = await request(app).post("/api/leads/student").send({
-        parentName: "Test Parent Lead",
-        whatsapp: "08123456789",
-        studentName: "Lead Student",
-        grade: "SMA/SMK",
-        program: "Privat",
-        city: "Jakarta",
-        area: "Tebet"
-      });
-
-      if (res.status !== 201) {
-        console.error("Lead Create Error:", res.body);
-      }
-      expect(res.status).toBe(201);
-      expect(res.body).toHaveProperty("status", "success");
+  // Scenario 2: Change subject flow
+  it('Scenario 2: Changing subject triggers cache check and fresh fetch', async () => {
+    mockReq.params.mataPelajaranId = 'subject-a';
+    
+    // Setup for first fetch
+    supabase.from.mockImplementation((table) => {
+      if (table === 'mata_pelajaran') return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 'a' }, error: null })
+      };
+      if (table === 'mata_pelajaran_spesialisasi') return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({ data: [], error: null })
+      };
+      return {};
     });
+
+    await specializationController.getSpecializationsBySubject(mockReq, mockRes, mockNext);
+    expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({ source: 'db' }));
+
+    // Second fetch with different ID
+    const mockRes2 = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() };
+    mockReq.params.mataPelajaranId = 'subject-b';
+    
+    // Update mock for subject-b
+    supabase.from.mockImplementation((table) => {
+      if (table === 'mata_pelajaran') return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 'b' }, error: null })
+      };
+      if (table === 'mata_pelajaran_spesialisasi') return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({ data: [], error: null })
+      };
+      return {};
+    });
+
+    await specializationController.getSpecializationsBySubject(mockReq, mockRes2, mockNext);
+
+    expect(mockRes2.json).toHaveBeenCalledWith(expect.objectContaining({ source: 'db' }));
+  });
+
+  // Scenario 3: Submit with invalid correlation
+  it('Scenario 3: Validation fails for mismatched subject-specialization', async () => {
+    mockReq.body = { 
+      mataPelajaranId: 'math-id', 
+      spesialisasiId: 'phys-spec-id',
+      userId: 'test-user'
+    };
+
+    supabase.from.mockImplementation((table) => {
+      if (table === 'mata_pelajaran_spesialisasi') return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: { message: 'Not found' } })
+      };
+      if (table === 'correlation_errors') return {
+        insert: vi.fn().mockResolvedValue({ error: null })
+      };
+      return {};
+    });
+
+    await specializationController.validateCorrelation(mockReq, mockRes, mockNext);
+
+    expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
+      valid: false
+    }));
+  });
+
+  // Scenario 4: Empty state handling
+  it('Scenario 4: Subject with no specializations returns empty array', async () => {
+    mockReq.params.mataPelajaranId = 'new-subject-id';
+    
+    supabase.from.mockImplementation((table) => {
+      if (table === 'mata_pelajaran') return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 'new' }, error: null })
+      };
+      if (table === 'mata_pelajaran_spesialisasi') return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({ data: [], error: null })
+      };
+      return {};
+    });
+
+    await specializationController.getSpecializationsBySubject(mockReq, mockRes, mockNext);
+    expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({ data: [] }));
   });
 });

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { 
   CheckCircle2, 
@@ -14,16 +14,29 @@ import {
   Briefcase,
   Clock,
   MapPin,
-  DollarSign,
+  Wallet,
   ArrowRight,
-  Home
+  Home,
+  X,
+  RefreshCcw,
+  Image as ImageIcon
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import Breadcrumbs from "../components/Breadcrumbs";
+import MultiAutocomplete from "../components/MultiAutocomplete";
+import Autocomplete from "../components/Autocomplete";
+import api from "../utils/api";
+import { formatIDR, parseIDR } from "../utils/format";
+import { validateImage, compressImage } from "../utils/image";
 
 const STUDENT_GRADES = ["Preschool/TK", "SD", "SMP", "SMA/SMK", "Umum"];
+const INDONESIAN_CITIES = [
+  "Jakarta", "Surabaya", "Bandung", "Medan", "Semarang", "Palembang", "Makassar", 
+  "Tangerang", "Depok", "Bekasi", "Bogor", "Yogyakarta", "Malang", "Denpasar",
+  "Bandar Lampung", "Padang", "Pekanbaru", "Banjarmasin", "Pontianak", "Samarinda"
+];
 
 const Badge = ({ children, color = "primary" }) => {
   const colors = {
@@ -47,14 +60,89 @@ export default function DaftarGuruPage() {
     password: "",
     whatsapp: "",
     education: "",
-    experience: "",
-    subjects: "",
+    experience: '',
+    selectedSubjects: [], // Array of objects {id, name}
+    selectedSpecializations: [], // Array of objects {id, name}
     studentGrades: [],
     hourlyRate: "",
     city: "",
     area: "",
     availability: "",
   });
+
+  // Dynamic Correlation States
+  const [subjects, setSubjects] = useState([]);
+  const [availableSpecializations, setAvailableSpecializations] = useState([]);
+  const [loadingSpecs, setLoadingSpecs] = useState(false);
+  const [specError, setSpecError] = useState(null);
+
+  // Fetch subjects on mount
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      try {
+        const res = await api.get("spesialisasi/subjects");
+        setSubjects(res.data?.data || []);
+      } catch (err) {
+        console.error("Failed to fetch subjects", err);
+      }
+    };
+    fetchSubjects();
+  }, []);
+
+  // Fetch specializations when selected subjects change
+  const fetchSpecializations = useCallback(async (subjectIds) => {
+    if (!subjectIds || subjectIds.length === 0) {
+      setAvailableSpecializations([]);
+      return;
+    }
+    setLoadingSpecs(true);
+    setSpecError(null);
+    try {
+      // Fetch specializations for all selected subjects
+      const promises = subjectIds.map(id => api.get(`spesialisasi/by-mata-pelajaran/${id}`));
+      const responses = await Promise.all(promises);
+      
+      // Merge and deduplicate specializations
+      const allSpecs = [];
+      const seenIds = new Set();
+      
+      responses.forEach(res => {
+        const specs = res.data?.data || [];
+        specs.forEach(spec => {
+          if (!seenIds.has(spec.id)) {
+            seenIds.add(spec.id);
+            allSpecs.push(spec);
+          }
+        });
+      });
+      
+      setAvailableSpecializations(allSpecs);
+      
+      // Filter out selected specializations that are no longer available
+      const filteredSelectedSpecs = form.selectedSpecializations.filter(selected => 
+        seenIds.has(selected.id)
+      );
+      
+      if (filteredSelectedSpecs.length !== form.selectedSpecializations.length) {
+        setForm(prev => ({ ...prev, selectedSpecializations: filteredSelectedSpecs }));
+      }
+      
+    } catch (err) {
+      setSpecError("Gagal mengambil data spesialisasi. Silakan periksa koneksi internet Anda.");
+      console.error("Failed to fetch specializations", err);
+    } finally {
+      setLoadingSpecs(false);
+    }
+  }, [form.selectedSpecializations]);
+
+  useEffect(() => {
+    const subjectIds = form.selectedSubjects.map(s => s.id);
+    const timer = setTimeout(() => {
+      fetchSpecializations(subjectIds);
+    }, 300); // Debounce 300ms
+
+    return () => clearTimeout(timer);
+  }, [form.selectedSubjects, fetchSpecializations]);
   
   const [files, setFiles] = useState({
     photo: null,
@@ -64,6 +152,8 @@ export default function DaftarGuruPage() {
 
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [photoPreview, setPhotoPreview] = useState(null);
   const [error, setError] = useState("");
   const [validationErrors, setValidationErrors] = useState({});
 
@@ -72,7 +162,7 @@ export default function DaftarGuruPage() {
     if (name === "fullName" && value.length < 3) error = "Nama lengkap minimal 3 karakter";
     if (name === "email" && !/\S+@\S+\.\S+/.test(value)) error = "Email tidak valid";
     if (name === "whatsapp" && !/^\d{10,}$/.test(value)) error = "Nomor WhatsApp minimal 10 digit angka";
-    if (name === "hourlyRate" && isNaN(value)) error = "Tarif harus berupa angka";
+    if (name === "hourlyRate" && isNaN(parseIDR(value))) error = "Tarif harus berupa angka";
     return error;
   };
 
@@ -84,11 +174,66 @@ export default function DaftarGuruPage() {
         ? [...form.studentGrades, value]
         : form.studentGrades.filter(g => g !== value);
       setForm(prev => ({ ...prev, studentGrades: updatedGrades }));
+    } else if (name === "hourlyRate") {
+      // Handle currency input
+      const numericValue = parseIDR(value);
+      const formatted = formatIDR(numericValue);
+      setForm(prev => ({ ...prev, [name]: formatted }));
+      const fieldError = validateField(name, formatted);
+      setValidationErrors(prev => ({ ...prev, [name]: fieldError }));
     } else {
       setForm((prev) => ({ ...prev, [name]: value }));
       const fieldError = validateField(name, value);
       setValidationErrors(prev => ({ ...prev, [name]: fieldError }));
     }
+  };
+
+  const handlePhotoChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate
+    const validation = validateImage(file);
+    if (!validation.isValid) {
+      setError(validation.message);
+      return;
+    }
+
+    try {
+      setError("");
+      setUploadProgress(10);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result);
+        setUploadProgress(40);
+      };
+      reader.readAsDataURL(file);
+
+      // Compress
+      const compressedBlob = await compressImage(file);
+      const compressedFile = new File([compressedBlob], file.name, {
+        type: file.type,
+        lastModified: Date.now(),
+      });
+      
+      setUploadProgress(100);
+      setFiles(prev => ({ ...prev, photo: compressedFile }));
+      
+      // Reset progress after a short delay
+      setTimeout(() => setUploadProgress(0), 1000);
+    } catch (err) {
+      console.error("Photo processing error:", err);
+      setError("Gagal memproses foto. Silakan coba lagi.");
+      setUploadProgress(0);
+    }
+  };
+
+  const removePhoto = () => {
+    setFiles(prev => ({ ...prev, photo: null }));
+    setPhotoPreview(null);
+    setUploadProgress(0);
   };
 
   const handleFileChange = (e) => {
@@ -118,21 +263,43 @@ export default function DaftarGuruPage() {
 
     setSubmitting(true);
     try {
-      // Use AuthContext register
-      const result = await register({
-        name: form.fullName,
-        email: form.email,
-        password: form.password,
-        whatsapp: form.whatsapp,
-        education: form.education,
-        experience: form.experience,
-        subjects: form.subjects,
-        studentGrades: form.studentGrades,
-        hourlyRate: form.hourlyRate,
-        city: form.city,
-        area: form.area,
-        availability: form.availability
-      }, 'tutor');
+      // Use FormData to support file uploads
+      const formData = new FormData();
+      
+      // Append form fields
+      Object.keys(form).forEach(key => {
+        let value = form[key];
+        let fieldName = key;
+
+        // Map frontend field names to backend expected names
+        if (key === 'fullName') fieldName = 'name';
+        
+        if (key === 'studentGrades') {
+          value = Array.isArray(form[key]) 
+            ? form[key].map(g => (typeof g === 'object' ? g.id : g)).join(',') 
+            : form[key];
+        }
+        
+        if (key === 'selectedSubjects') {
+          fieldName = 'mata_pelajaran_id';
+          value = form.selectedSubjects.map(s => s.id).join(',');
+        }
+
+        if (key === 'selectedSpecializations') {
+          fieldName = 'spesialisasi_id';
+          value = form.selectedSpecializations.map(s => s.id).join(',');
+        }
+        
+        formData.append(fieldName, value);
+      });
+
+      // Append files
+      if (files.photo) formData.append('photo', files.photo);
+      if (files.cv) formData.append('cv', files.cv);
+      if (files.certificate) formData.append('certificate', files.certificate);
+
+      // Use AuthContext register with FormData
+      const result = await register(formData, 'tutor');
       
       if (result.success) {
         setSubmitted(true);
@@ -325,7 +492,7 @@ export default function DaftarGuruPage() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="overflow-hidden rounded-[2.5rem] bg-white p-8 md:p-12 shadow-2xl shadow-slate-200/50 ring-1 ring-slate-100"
+            className="overflow-visible rounded-[2.5rem] bg-white p-8 md:p-12 shadow-2xl shadow-slate-200/50 ring-1 ring-slate-100"
           >
             <div className="mb-10 flex items-center gap-4">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary/10 text-secondary shadow-inner">
@@ -367,19 +534,33 @@ export default function DaftarGuruPage() {
                 />
               </div>
 
-              <div className="space-y-2.5">
-                <label className="ml-1 text-[11px] font-black uppercase tracking-[0.15em] text-slate-400">Mata Pelajaran yang Dikuasai</label>
-                <div className="group relative">
-                  <BookOpen className="absolute left-5 top-4 h-5 w-5 text-slate-400 transition-colors group-focus-within:text-secondary" />
-                  <input
-                    type="text"
-                    name="subjects"
-                    required
-                    value={form.subjects}
-                    onChange={handleChange}
-                    className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50/50 py-4 pl-14 pr-6 text-sm font-bold text-slate-700 transition-all placeholder:font-medium placeholder:text-slate-400 focus:border-secondary/30 focus:bg-white focus:outline-none focus:ring-8 focus:ring-secondary/5"
-                    placeholder="Contoh: Matematika, Fisika, Bahasa Inggris"
-                  />
+              <div className="space-y-6 relative">
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="space-y-2.5">
+                    <label className="ml-1 text-[11px] font-black uppercase tracking-[0.15em] text-slate-400">Mata Pelajaran</label>
+                    <MultiAutocomplete
+                      name="selectedSubjects"
+                      options={subjects}
+                      value={form.selectedSubjects}
+                      onChange={handleChange}
+                      placeholder="Ketik mata pelajaran..."
+                      icon={BookOpen}
+                    />
+                  </div>
+
+                  <div className="space-y-2.5">
+                    <label className="ml-1 text-[11px] font-black uppercase tracking-[0.15em] text-slate-400">Spesialisasi</label>
+                    <MultiAutocomplete
+                      name="selectedSpecializations"
+                      options={availableSpecializations}
+                      value={form.selectedSpecializations}
+                      onChange={handleChange}
+                      placeholder={form.selectedSubjects.length === 0 ? "Pilih mata pelajaran dahulu" : "Ketik spesialisasi..."}
+                      icon={Briefcase}
+                      loading={loadingSpecs}
+                      error={specError}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -390,7 +571,7 @@ export default function DaftarGuruPage() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="overflow-hidden rounded-[2.5rem] bg-white p-8 md:p-12 shadow-2xl shadow-slate-200/50 ring-1 ring-slate-100"
+            className="overflow-visible rounded-[2.5rem] bg-white p-8 md:p-12 shadow-2xl shadow-slate-200/50 ring-1 ring-slate-100"
           >
             <div className="mb-10 flex items-center gap-4">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-coral/10 text-coral shadow-inner">
@@ -405,28 +586,21 @@ export default function DaftarGuruPage() {
             <div className="space-y-8">
               <div className="space-y-4">
                 <label className="ml-1 text-[11px] font-black uppercase tracking-[0.15em] text-slate-400">Jenjang Siswa yang Diajarkan</label>
-                <div className="flex flex-wrap gap-3">
-                  {STUDENT_GRADES.map(grade => (
-                    <label key={grade} className="flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-slate-100 bg-slate-50/50 px-5 py-3 text-sm font-bold text-slate-600 transition-all hover:border-coral/20 hover:bg-coral/5 has-[:checked]:border-coral/30 has-[:checked]:bg-coral/10 has-[:checked]:text-coral">
-                      <input
-                        type="checkbox"
-                        name="studentGrades"
-                        value={grade}
-                        checked={form.studentGrades.includes(grade)}
-                        onChange={handleChange}
-                        className="h-5 w-5 rounded-lg border-2 border-slate-300 text-coral focus:ring-coral/20 transition-all"
-                      />
-                      {grade}
-                    </label>
-                  ))}
-                </div>
+                <MultiAutocomplete
+                  name="studentGrades"
+                  options={STUDENT_GRADES.map(g => ({ id: g, name: g }))}
+                  value={form.studentGrades.map(g => (typeof g === 'object' ? g : { id: g, name: g }))}
+                  onChange={handleChange}
+                  placeholder="Pilih jenjang siswa..."
+                  icon={GraduationCap}
+                />
               </div>
 
               <div className="grid gap-8 md:grid-cols-2">
                 <div className="space-y-2.5">
                   <label className="ml-1 text-[11px] font-black uppercase tracking-[0.15em] text-slate-400">Ekspektasi Tarif / Jam (Rp)</label>
                   <div className="group relative">
-                    <DollarSign className="absolute left-5 top-4 h-5 w-5 text-slate-400 transition-colors group-focus-within:text-coral" />
+                    <Wallet className="absolute left-5 top-4 h-5 w-5 text-slate-400 transition-colors group-focus-within:text-coral" />
                     <input
                       type="text"
                       name="hourlyRate"
@@ -459,18 +633,15 @@ export default function DaftarGuruPage() {
               <div className="grid gap-8 md:grid-cols-2">
                 <div className="space-y-2.5">
                   <label className="ml-1 text-[11px] font-black uppercase tracking-[0.15em] text-slate-400">Kota Domisili</label>
-                  <div className="group relative">
-                    <MapPin className="absolute left-5 top-4 h-5 w-5 text-slate-400 transition-colors group-focus-within:text-coral" />
-                    <input
-                      type="text"
-                      name="city"
-                      required
-                      value={form.city}
-                      onChange={handleChange}
-                      className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50/50 py-4 pl-14 pr-6 text-sm font-bold text-slate-700 transition-all placeholder:font-medium placeholder:text-slate-400 focus:border-coral/30 focus:bg-white focus:outline-none focus:ring-8 focus:ring-coral/5"
-                      placeholder="Contoh: Palembang"
-                    />
-                  </div>
+                  <Autocomplete
+                    name="city"
+                    value={form.city}
+                    onChange={handleChange}
+                    options={INDONESIAN_CITIES}
+                    placeholder="Contoh: Palembang"
+                    icon={MapPin}
+                    suggestionClassName="z-[100]"
+                  />
                 </div>
 
                 <div className="space-y-2.5">
@@ -497,7 +668,7 @@ export default function DaftarGuruPage() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="overflow-hidden rounded-[2.5rem] bg-white p-8 md:p-12 shadow-2xl shadow-slate-200/50 ring-1 ring-slate-100"
+            className="overflow-visible rounded-[2.5rem] bg-white p-8 md:p-12 shadow-2xl shadow-slate-200/50 ring-1 ring-slate-100"
           >
             <div className="mb-10 flex items-center gap-4">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-inner">
@@ -516,25 +687,69 @@ export default function DaftarGuruPage() {
                   <input
                     type="file"
                     name="photo"
-                    accept="image/*"
-                    onChange={handleFileChange}
+                    accept="image/jpeg,image/png,image/jpg"
+                    onChange={handlePhotoChange}
                     className="hidden"
                     id="photo-upload"
                   />
-                  <label
-                    htmlFor="photo-upload"
-                    className="flex flex-col items-center justify-center gap-4 rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-8 transition-all hover:border-primary/50 hover:bg-primary/5 cursor-pointer group"
-                  >
-                    <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${files.photo ? 'bg-emerald-100 text-emerald-600' : 'bg-white text-slate-400 group-hover:text-primary'} shadow-sm transition-colors`}>
-                      <Upload size={24} />
-                    </div>
-                    <div className="text-center">
-                      <span className="block text-xs font-black uppercase tracking-wider text-slate-600">
-                        {files.photo ? 'Terpilih' : 'Pilih Foto'}
-                      </span>
-                      {files.photo && <span className="mt-1 block text-[10px] font-medium text-slate-400 truncate max-w-[120px]">{files.photo.name}</span>}
-                    </div>
-                  </label>
+                  
+                  <div className="relative overflow-hidden rounded-[2rem] border-2 border-dashed border-slate-200 bg-slate-50/50 transition-all hover:border-primary/50 min-h-[160px] flex items-center justify-center">
+                    {photoPreview ? (
+                      <div className="relative group aspect-square w-full h-full overflow-hidden rounded-[1.5rem]">
+                        <img 
+                          src={photoPreview} 
+                          alt="Preview" 
+                          className="h-full w-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                          <label 
+                            htmlFor="photo-upload"
+                            className="p-3 bg-white rounded-full text-slate-700 hover:bg-primary hover:text-white transition-all cursor-pointer"
+                          >
+                            <Upload size={20} />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={removePhoto}
+                            className="p-3 bg-white rounded-full text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                          >
+                            <X size={20} />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <label
+                        htmlFor="photo-upload"
+                        className="flex flex-col items-center justify-center gap-4 py-10 w-full h-full cursor-pointer group"
+                      >
+                        <div className="flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-white text-slate-400 group-hover:bg-primary group-hover:text-white shadow-sm transition-all">
+                          <ImageIcon size={28} />
+                        </div>
+                        <div className="text-center">
+                          <span className="block text-xs font-black uppercase tracking-wider text-slate-600">Pilih Foto</span>
+                          <span className="mt-1 block text-[10px] font-medium text-slate-400">JPG, PNG (Maks 2MB)</span>
+                        </div>
+                      </label>
+                    )}
+
+                    {/* Progress Bar */}
+                    <AnimatePresence>
+                      {uploadProgress > 0 && (
+                        <motion.div 
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="absolute bottom-0 left-0 right-0 h-1.5 bg-slate-100"
+                        >
+                          <motion.div 
+                            className="h-full bg-primary"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${uploadProgress}%` }}
+                          />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </div>
               </div>
 
@@ -549,20 +764,22 @@ export default function DaftarGuruPage() {
                     className="hidden"
                     id="cv-upload"
                   />
-                  <label
-                    htmlFor="cv-upload"
-                    className="flex flex-col items-center justify-center gap-4 rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-8 transition-all hover:border-primary/50 hover:bg-primary/5 cursor-pointer group"
-                  >
-                    <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${files.cv ? 'bg-emerald-100 text-emerald-600' : 'bg-white text-slate-400 group-hover:text-primary'} shadow-sm transition-colors`}>
-                      <Upload size={24} />
-                    </div>
-                    <div className="text-center">
-                      <span className="block text-xs font-black uppercase tracking-wider text-slate-600">
-                        {files.cv ? 'Terpilih' : 'Pilih CV (PDF)'}
-                      </span>
-                      {files.cv && <span className="mt-1 block text-[10px] font-medium text-slate-400 truncate max-w-[120px]">{files.cv.name}</span>}
-                    </div>
-                  </label>
+                  <div className="relative overflow-hidden rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50/50 transition-all hover:border-primary/50 hover:bg-primary/5 min-h-[160px] flex items-center justify-center">
+                    <label
+                      htmlFor="cv-upload"
+                      className="flex flex-col items-center justify-center gap-4 p-8 w-full h-full cursor-pointer group"
+                    >
+                      <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${files.cv ? 'bg-emerald-100 text-emerald-600' : 'bg-white text-slate-400 group-hover:text-primary'} shadow-sm transition-colors`}>
+                        <Upload size={24} />
+                      </div>
+                      <div className="text-center">
+                        <span className="block text-xs font-black uppercase tracking-wider text-slate-600">
+                          {files.cv ? 'Terpilih' : 'Pilih CV (PDF)'}
+                        </span>
+                        {files.cv && <span className="mt-1 block text-[10px] font-medium text-slate-400 truncate max-w-[120px]">{files.cv.name}</span>}
+                      </div>
+                    </label>
+                  </div>
                 </div>
               </div>
 
@@ -577,20 +794,22 @@ export default function DaftarGuruPage() {
                     className="hidden"
                     id="cert-upload"
                   />
-                  <label
-                    htmlFor="cert-upload"
-                    className="flex flex-col items-center justify-center gap-4 rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-8 transition-all hover:border-primary/50 hover:bg-primary/5 cursor-pointer group"
-                  >
-                    <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${files.certificate ? 'bg-emerald-100 text-emerald-600' : 'bg-white text-slate-400 group-hover:text-primary'} shadow-sm transition-colors`}>
-                      <Upload size={24} />
-                    </div>
-                    <div className="text-center">
-                      <span className="block text-xs font-black uppercase tracking-wider text-slate-600">
-                        {files.certificate ? 'Terpilih' : 'Pilih Sertifikat'}
-                      </span>
-                      {files.certificate && <span className="mt-1 block text-[10px] font-medium text-slate-400 truncate max-w-[120px]">{files.certificate.name}</span>}
-                    </div>
-                  </label>
+                  <div className="relative overflow-hidden rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50/50 transition-all hover:border-primary/50 hover:bg-primary/5 min-h-[160px] flex items-center justify-center">
+                    <label
+                      htmlFor="cert-upload"
+                      className="flex flex-col items-center justify-center gap-4 p-8 w-full h-full cursor-pointer group"
+                    >
+                      <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${files.certificate ? 'bg-emerald-100 text-emerald-600' : 'bg-white text-slate-400 group-hover:text-primary'} shadow-sm transition-colors`}>
+                        <Upload size={24} />
+                      </div>
+                      <div className="text-center">
+                        <span className="block text-xs font-black uppercase tracking-wider text-slate-600">
+                          {files.certificate ? 'Terpilih' : 'Pilih Sertifikat'}
+                        </span>
+                        {files.certificate && <span className="mt-1 block text-[10px] font-medium text-slate-400 truncate max-w-[120px]">{files.certificate.name}</span>}
+                      </div>
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>
@@ -603,7 +822,7 @@ export default function DaftarGuruPage() {
           <div className="pt-6">
             <button
               type="submit"
-              disabled={submitting || !isOnline}
+              disabled={submitting || !isOnline || (form.mata_pelajaran_id && !form.spesialisasi_id)}
               className="group relative flex w-full items-center justify-center gap-4 overflow-hidden rounded-[2rem] bg-primary px-8 py-5 text-xl font-black text-white shadow-2xl shadow-primary/30 transition-all hover:bg-accent hover:shadow-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <div className="absolute inset-0 translate-y-full bg-gradient-to-t from-black/10 to-transparent transition-transform group-hover:translate-y-0" />

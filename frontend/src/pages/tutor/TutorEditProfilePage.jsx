@@ -32,9 +32,12 @@ import {
   ChevronDown,
   MapPin,
   MessageSquare,
-  Plus
+  Plus,
+  BookOpen,
+  GraduationCap
 } from 'lucide-react';
 import AvailabilityPicker from '../../components/AvailabilityPicker';
+import MultiAutocomplete from '../../components/MultiAutocomplete';
 
 const INDONESIA_CITIES = [
   "Jakarta Pusat", "Jakarta Utara", "Jakarta Barat", "Jakarta Selatan", "Jakarta Timur",
@@ -69,8 +72,6 @@ const TutorEditProfilePage = () => {
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [customCity, setCustomCity] = useState("");
   const [isCustomCity, setIsCustomCity] = useState(false);
-  const [subjectSearch, setSubjectSearch] = useState("");
-  const [showSubjectDropdown, setShowSubjectDropdown] = useState(false);
 
   const POPULAR_SUBJECTS = [
     "Matematika", "Bahasa Inggris", "Bahasa Indonesia", "Fisika", "Kimia", "Biologi",
@@ -79,6 +80,8 @@ const TutorEditProfilePage = () => {
     "Bahasa Jepang", "Bahasa Korea", "Bahasa Arab", "Bahasa Jerman"
   ].sort();
   
+  const STUDENT_GRADES = ["Preschool/TK", "SD", "SMP", "SMA/SMK", "Umum"];
+
   const [profile, setProfile] = useState({
     name: '',
     email: '',
@@ -249,7 +252,7 @@ const TutorEditProfilePage = () => {
 
     const loadingToast = toast.loading("Mengunggah foto...");
     try {
-      const response = await api.post("/users/profile/photo", formData, {
+      const response = await api.post("users/profile/photo", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setProfile(prev => ({ ...prev, profile_photo: response.data.data.url }));
@@ -811,104 +814,35 @@ const TutorEditProfilePage = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Mata Pelajaran yang Diajar</label>
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          {profile.subjects.map((s, i) => (
-                            <span key={i} className="px-3 py-1.5 bg-primary/10 text-primary text-xs font-bold rounded-xl flex items-center gap-2 ring-1 ring-primary/20 animate-in zoom-in-95">
-                              {s}
-                              <button 
-                                onClick={() => {
-                                  const newSubjects = profile.subjects.filter((_, idx) => idx !== i);
-                                  setProfile(p => ({ ...p, subjects: newSubjects }));
-                                  console.log(`[Subject Filter] Removed: ${s}. Current subjects:`, newSubjects);
-                                }} 
-                                className="hover:text-accent transition-colors"
-                              >
-                                <X size={14} />
-                              </button>
-                            </span>
-                          ))}
-                          {profile.subjects.length === 0 && (
-                            <p className="text-xs text-slate-400 italic">Belum ada mata pelajaran terpilih.</p>
-                          )}
-                        </div>
-                        
-                        <div className="relative">
-                          <div className="relative">
-                            <Search className="absolute left-3 top-3 text-slate-400" size={18} />
-                            <input 
-                              type="text" 
-                              placeholder="Cari atau tambah mata pelajaran..."
-                              value={subjectSearch}
-                              onChange={(e) => {
-                                setSubjectSearch(e.target.value);
-                                setShowSubjectDropdown(true);
-                              }}
-                              onFocus={() => setShowSubjectDropdown(true)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' && subjectSearch) {
-                                  e.preventDefault();
-                                  if (!profile.subjects.includes(subjectSearch)) {
-                                    setProfile(p => ({ ...p, subjects: [...p.subjects, subjectSearch] }));
-                                    console.log(`[Subject Filter] Added New: ${subjectSearch}`);
-                                    setSubjectSearch('');
-                                    setShowSubjectDropdown(false);
-                                  } else {
-                                    toast.error("Pelajaran sudah ada dalam daftar");
-                                  }
-                                }
-                              }}
-                              className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 text-sm font-medium focus:border-primary focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/5 transition-all"
-                            />
-                          </div>
-
-                          {showSubjectDropdown && subjectSearch && (
-                            <div className="absolute z-50 mt-2 w-full bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                              <div className="max-h-60 overflow-y-auto py-2">
-                                {(() => {
-                                  const filtered = POPULAR_SUBJECTS.filter(s => 
-                                    s.toLowerCase().includes(subjectSearch.toLowerCase()) && 
-                                    !profile.subjects.includes(s)
-                                  );
-                                  
-                                  if (filtered.length === 0 && !profile.subjects.includes(subjectSearch)) {
-                                    return (
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setProfile(p => ({ ...p, subjects: [...p.subjects, subjectSearch] }));
-                                          console.log(`[Subject Filter] Added Manual: ${subjectSearch}`);
-                                          setSubjectSearch('');
-                                          setShowSubjectDropdown(false);
-                                        }}
-                                        className="w-full text-left px-4 py-3 text-sm hover:bg-slate-50 text-primary font-bold flex items-center gap-2"
-                                      >
-                                        <Plus size={16} />
-                                        Tambah "{subjectSearch}"
-                                      </button>
-                                    );
-                                  }
-
-                                  return filtered.map((s) => (
-                                    <button
-                                      key={s}
-                                      type="button"
-                                      onClick={() => {
-                                        setProfile(p => ({ ...p, subjects: [...p.subjects, s] }));
-                                        console.log(`[Subject Filter] Selected from list: ${s}`);
-                                        setSubjectSearch('');
-                                        setShowSubjectDropdown(false);
-                                      }}
-                                      className="w-full text-left px-4 py-3 text-sm hover:bg-slate-50 text-slate-600 transition-colors"
-                                    >
-                                      {s}
-                                    </button>
-                                  ));
-                                })()}
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                        <MultiAutocomplete
+                          name="subjects"
+                          options={POPULAR_SUBJECTS.map(s => ({ id: s, name: s }))}
+                          value={profile.subjects.map(s => ({ id: s, name: s }))}
+                          onChange={(e) => {
+                            const newSubjects = e.target.value.map(v => v.name);
+                            setProfile(p => ({ ...p, subjects: newSubjects }));
+                          }}
+                          placeholder="Cari atau tambah mata pelajaran..."
+                          allowCreate={true}
+                          icon={BookOpen}
+                        />
                         <p className="text-[10px] text-slate-400 mt-1 ml-1 font-medium">Tips: Pelajaran yang sudah Anda pilih tidak akan muncul kembali di hasil pencarian.</p>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Jenjang Pendidikan yang Diajar</label>
+                        <MultiAutocomplete
+                          name="student_grades"
+                          options={STUDENT_GRADES.map(g => ({ id: g, name: g }))}
+                          value={profile.student_grades.map(g => ({ id: g, name: g }))}
+                          onChange={(e) => {
+                            const newGrades = e.target.value.map(v => v.name);
+                            setProfile(p => ({ ...p, student_grades: newGrades }));
+                          }}
+                          placeholder="Pilih Jenjang Pendidikan..."
+                          allowCreate={false}
+                          icon={GraduationCap}
+                        />
                       </div>
 
                       <div className="space-y-1.5">

@@ -6,6 +6,7 @@ import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import api from "../utils/api";
+import MultiAutocomplete from "../components/MultiAutocomplete";
 import { 
   Plus, 
   Search, 
@@ -20,10 +21,12 @@ import {
   FileText,
   Image as ImageIcon,
   Calendar,
-  X
+  X,
+  GraduationCap
 } from "lucide-react";
 
 export default function AdminProgramsPage() {
+  const STUDENT_GRADES = ["Preschool/TK", "SD", "SMP", "SMA/SMK", "Umum"];
   const [programs, setPrograms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -47,7 +50,7 @@ export default function AdminProgramsPage() {
   const fetchPrograms = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get(`/admin/programs?page=${page}&search=${search}`);
+      const res = await api.get(`admin/programs?page=${page}&search=${search}`);
       setPrograms(res.data.data.programs);
       setTotalPages(res.data.data.pagination.pages);
     } catch (_err) {
@@ -99,12 +102,12 @@ export default function AdminProgramsPage() {
     const loadingToast = toast.loading(editingProgram ? "Memperbarui program..." : "Menambah program...");
     try {
       if (editingProgram) {
-        await api.put(`/admin/programs/${editingProgram.id}`, formData);
+        await api.put(`admin/programs/${editingProgram.id}`, formData);
         toast.success("Program berhasil diperbarui", { id: loadingToast });
       } else {
         // Generate slug from name
         const slug = formData.name.toLowerCase().replace(/ /g, "-").replace(/[^\w-]+/g, "");
-        await api.post("/admin/programs", { ...formData, slug });
+        await api.post("admin/programs", { ...formData, slug });
         toast.success("Program berhasil ditambahkan", { id: loadingToast });
       }
       setIsModalOpen(false);
@@ -119,7 +122,7 @@ export default function AdminProgramsPage() {
     
     const loadingToast = toast.loading("Menghapus program...");
     try {
-      await api.delete(`/admin/programs/${id}`);
+      await api.delete(`admin/programs/${id}`);
       toast.success("Program berhasil dihapus", { id: loadingToast });
       fetchPrograms();
     } catch (_err) {
@@ -139,7 +142,7 @@ export default function AdminProgramsPage() {
 
     setUploading(true);
     try {
-      const response = await api.post("/admin/upload", formDataUpload, {
+      const response = await api.post("admin/upload", formDataUpload, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setFormData({ ...formData, coverImage: response.data.data.url });
@@ -154,7 +157,7 @@ export default function AdminProgramsPage() {
   const handleExportExcel = () => {
     const dataToExport = programs.map(p => ({
       "Nama Program": p.name,
-      "Kategori": p.category,
+      "Jenjang Pendidikan": p.category,
       "Harga": p.price,
       "Status": p.isActive ? "Aktif" : "Nonaktif",
       "Dibuat Pada": new Date(p.createdAt).toLocaleDateString()
@@ -171,7 +174,7 @@ export default function AdminProgramsPage() {
       const doc = new jsPDF();
       doc.text("Daftar Program LMS YakinPintar", 14, 15);
       
-      const tableColumn = ["Nama Program", "Kategori", "Harga", "Status", "Dibuat Pada"];
+      const tableColumn = ["Nama Program", "Jenjang Pendidikan", "Harga", "Status", "Dibuat Pada"];
       const tableRows = programs.map(p => [
         p.name,
         p.category,
@@ -244,7 +247,7 @@ export default function AdminProgramsPage() {
           <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
             <tr>
               <th className="px-6 py-4">Nama Program</th>
-              <th className="px-6 py-4">Kategori</th>
+              <th className="px-6 py-4">Jenjang Pendidikan</th>
               <th className="px-6 py-4">Harga</th>
               <th className="px-6 py-4">Status</th>
               <th className="px-6 py-4">Aksi</th>
@@ -392,13 +395,19 @@ export default function AdminProgramsPage() {
 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-xs font-semibold text-slate-500 uppercase">Kategori</label>
-                    <input
-                      type="text"
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary"
-                      placeholder="Contoh: Akademik, Mengaji"
+                    <label className="text-xs font-semibold text-slate-500 uppercase">Jenjang Pendidikan</label>
+                    <MultiAutocomplete
+                      name="category"
+                      options={STUDENT_GRADES.map(grade => ({ id: grade, name: grade }))}
+                      value={formData.category ? [{ id: formData.category, name: formData.category }] : []}
+                      onChange={(e) => {
+                        const selected = e.target.value;
+                        // Single select behavior: take the last selected item
+                        const newVal = selected.length > 0 ? selected[selected.length - 1].name : "";
+                        setFormData({ ...formData, category: newVal });
+                      }}
+                      placeholder="Pilih Jenjang"
+                      icon={GraduationCap}
                     />
                   </div>
                   <div>

@@ -23,7 +23,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await api.post('/auth/login', { email, password });
+      const response = await api.post('auth/login', { email, password });
       const { token, user } = response.data;
       
       localStorage.setItem('token', token);
@@ -65,8 +65,15 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData, role = 'student') => {
     try {
-        const endpoint = role === 'student' ? '/auth/register/student' : '/auth/register/tutor';
-        const response = await api.post(endpoint, userData);
+        const endpoint = role === 'student' ? 'auth/register/student' : 'auth/register/tutor';
+        
+        // Check if userData is FormData
+        const isFormData = userData instanceof FormData;
+        const config = isFormData ? {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        } : {};
+
+        const response = await api.post(endpoint, userData, config);
         const { token, user: registeredUser } = response.data;
         
         loginWithUserData(registeredUser, token);

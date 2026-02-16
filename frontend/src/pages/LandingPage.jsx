@@ -6,7 +6,7 @@ import {
   Smartphone, 
   BookOpen, 
   RefreshCcw, 
-  DollarSign, 
+  Wallet, 
   Gift, 
   MessageSquare, 
   Users, 
@@ -222,7 +222,7 @@ function HeroSection({ variation = "A" }) {
 function StatsSection() {
   const stats = [
     { label: "Siswa Aktif", value: "1.2k+", icon: Users, color: "text-primary" },
-    { label: "Mentor Pilihan", value: "500+", icon: GraduationCap, color: "text-coral" },
+    { label: "Jenjang Pendidikan", value: "500+", icon: GraduationCap, color: "text-coral" },
     { label: "Success Rate", value: "98%", icon: Target, color: "text-accent" },
     { label: "Achievements", value: "50+", icon: Trophy, color: "text-accent-hover" },
   ];
@@ -503,7 +503,11 @@ export default function LandingPage() {
               Bergabunglah dengan 10.000+ siswa lainnya dan temukan cara belajar yang paling asik buat kamu.
             </p>
             <div className="mt-20 flex flex-wrap justify-center gap-8">
-              <AnimatedButton variant="primary" className="px-20 py-8 text-2xl group">
+              <AnimatedButton 
+                onClick={() => navigate("/daftar-guru")}
+                variant="primary" 
+                className="px-20 py-8 text-2xl group"
+              >
                 Daftar Sekarang!
                 <ArrowRight size={32} className="group-hover:translate-x-3 transition-transform" />
               </AnimatedButton>

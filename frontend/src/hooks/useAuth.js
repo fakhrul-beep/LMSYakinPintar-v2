@@ -11,7 +11,8 @@ export const useAuth = () => {
   const login = async (email, password) => {
     setLoading(true);
     try {
-      const res = await api.post("/auth/login", { email, password });
+      // Try admin login first if on admin page, or just try auth/login
+      const res = await api.post("admin/login", { email, password });
       const { token, user: userData } = res.data;
       
       localStorage.setItem("token", token);

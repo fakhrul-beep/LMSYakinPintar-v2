@@ -36,7 +36,7 @@ export default function AdminBlogPage() {
   const fetchPosts = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get(`/admin/blog?page=${page}&search=${search}`);
+      const res = await api.get(`admin/blog?page=${page}&search=${search}`);
       setPosts(res.data.data.posts);
       setTotalPages(res.data.data.pagination.pages);
     } catch (_err) {
@@ -48,7 +48,7 @@ export default function AdminBlogPage() {
 
   const fetchCategories = useCallback(async () => {
     try {
-      const res = await api.get("/admin/blog-categories");
+      const res = await api.get("admin/blog-categories");
       setCategories(res.data.data);
     } catch (_err) {
       console.error("Failed to fetch categories", _err);
@@ -99,10 +99,10 @@ export default function AdminBlogPage() {
       };
 
       if (editingPost) {
-        await api.put(`/admin/blog/${editingPost.id}`, formattedData);
+        await api.put(`admin/blog/${editingPost.id}`, formattedData);
         toast.success("Artikel berhasil diperbarui", { id: loadingToast });
       } else {
-        await api.post("/admin/blog", formattedData);
+        await api.post("admin/blog", formattedData);
         toast.success("Artikel berhasil diterbitkan", { id: loadingToast });
       }
       setIsModalOpen(false);
@@ -117,7 +117,7 @@ export default function AdminBlogPage() {
     
     const loadingToast = toast.loading("Menghapus artikel...");
     try {
-      await api.delete(`/admin/blog/${id}`);
+      await api.delete(`admin/blog/${id}`);
       toast.success("Artikel berhasil dihapus", { id: loadingToast });
       fetchPosts();
     } catch (_err) {
@@ -180,7 +180,7 @@ export default function AdminBlogPage() {
 
     setUploading(true);
     try {
-      const response = await api.post("/admin/upload", formDataUpload, {
+      const response = await api.post("admin/upload", formDataUpload, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       if (type === "featured") {

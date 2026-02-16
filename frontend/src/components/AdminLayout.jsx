@@ -15,7 +15,8 @@ import {
   UserCheck,
   CreditCard,
   MessageSquareQuote,
-  FolderOpen
+  FolderOpen,
+  AlertCircle
 } from "lucide-react";
 
 const SidebarItem = ({ to, icon, label, active }) => (
@@ -50,6 +51,7 @@ export default function AdminLayout() {
     { to: "/admin/blog-categories", icon: FolderOpen, label: "Kategori Blog" },
     { to: "/admin/testimonials", icon: MessageSquareQuote, label: "Testimoni" },
     { to: "/admin/logs", icon: History, label: "Log Aktivitas" },
+    { to: "/admin/correlation-errors", icon: AlertCircle, label: "Monitoring Korelasi" },
     { to: "/admin/roles", icon: ShieldCheck, label: "Role Admin" },
     { to: "/admin/settings", icon: Settings, label: "Pengaturan" },
   ];

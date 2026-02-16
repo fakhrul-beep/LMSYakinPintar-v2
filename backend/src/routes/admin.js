@@ -2,6 +2,7 @@ import express from "express";
 import multer from "multer";
 import path from "path";
 import * as adminController from "../controllers/admin.controller.js";
+import * as specializationController from "../controllers/specialization.controller.js";
 import { requireAuth, requireRole } from "../middleware/auth.middleware.js";
 import { validateRegister, logUserCreation } from "../middleware/security.middleware.js";
 
@@ -57,8 +58,8 @@ router.delete("/students/:id", adminController.deleteStudent);
 
 // Tutor management
 router.get("/tutors", adminController.getTutors);
-router.post("/tutors", adminController.createTutor);
-router.put("/tutors/:id", adminController.updateTutor);
+router.post("/tutors", specializationController.validateCorrelation, adminController.createTutor);
+router.put("/tutors/:id", specializationController.validateCorrelation, adminController.updateTutor);
 router.patch("/tutors/:id/status", adminController.updateTutorStatus);
 
 // Payment management

@@ -125,7 +125,7 @@ export default function SubjectsPage() {
 
     try {
       const res = await api.get('/programs');
-      const data = res.data.data.programs;
+      const data = res.data?.data?.programs || res.data?.programs || (Array.isArray(res.data) ? res.data : []);
       setPrograms(data);
       setCachedPrograms(data);
       setError(null);

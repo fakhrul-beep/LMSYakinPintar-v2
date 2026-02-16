@@ -9,10 +9,13 @@ import api from "../utils/api";
 import { 
   Plus, Search, Edit, Trash2, CheckCircle, XCircle, X,
   ChevronLeft, ChevronRight, User, Mail, Phone, GraduationCap, Download, Camera,
-  FileText
+  FileText, RefreshCcw, AlertCircle, BookOpen, Briefcase
 } from "lucide-react";
+import MultiAutocomplete from "../components/MultiAutocomplete";
 
 export default function AdminTutorsPage() {
+  const STUDENT_GRADES = ["Preschool/TK", "SD", "SMP", "SMA/SMK", "Umum"];
+
   const [tutors, setTutors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -20,11 +23,24 @@ export default function AdminTutorsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTutor, setEditingTutor] = useState(null);
+
+  // Dynamic Correlation States
+  const [subjects, setSubjects] = useState([]);
+  const [loadingSubjects, setLoadingSubjects] = useState(false);
+  const [subjectError, setSubjectError] = useState(null);
+  const [availableSpecializations, setAvailableSpecializations] = useState([]);
+  const [loadingSpecs, setLoadingSpecs] = useState(false);
+  const [specError, setSpecError] = useState(null);
+  const [showSubjectChangeConfirm, setShowSubjectChangeConfirm] = useState(false);
+  const [pendingSubjectId, setPendingSubjectId] = useState("");
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
-    specialization: "",
+    specialization: [], // Changed to array for MultiAutocomplete
+    mata_pelajaran_id: [], // Changed to array for MultiAutocomplete
+    spesialisasi_id: [], // Changed to array for MultiAutocomplete
     education: "",
     experience: "",
     hourlyRate: 0,
@@ -34,12 +50,90 @@ export default function AdminTutorsPage() {
     isActive: true,
   });
 
+  // Fetch subjects on mount
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      setLoadingSubjects(true);
+      setSubjectError(null);
+      try {
+        const res = await api.get("spesialisasi/subjects");
+        setSubjects(res.data?.data || []);
+      } catch (err) {
+        console.error("Failed to fetch subjects", err);
+        setSubjectError("Gagal memuat mata pelajaran");
+        toast.error("Gagal memuat data mata pelajaran");
+      } finally {
+        setLoadingSubjects(false);
+      }
+    };
+    fetchSubjects();
+  }, []);
+
+  // Fetch specializations when subject changes
+  const fetchSpecializations = useCallback(async (subjectIds) => {
+    if (!subjectIds || (Array.isArray(subjectIds) && subjectIds.length === 0)) {
+      setAvailableSpecializations([]);
+      return;
+    }
+    
+    // Normalize input to array
+    const ids = Array.isArray(subjectIds) ? subjectIds : [subjectIds];
+    
+    setLoadingSpecs(true);
+    setSpecError(null);
+    try {
+      // Fetch specializations for all selected subjects
+      const promises = ids.map(id => api.get(`spesialisasi/by-mata-pelajaran/${id}`));
+      const responses = await Promise.all(promises);
+      
+      // Merge and deduplicate specializations
+      const allSpecs = [];
+      const seenIds = new Set();
+      
+      responses.forEach(res => {
+        const specs = res.data?.data || [];
+        specs.forEach(spec => {
+          if (!seenIds.has(spec.id)) {
+            seenIds.add(spec.id);
+            allSpecs.push(spec);
+          }
+        });
+      });
+      
+      setAvailableSpecializations(allSpecs);
+    } catch (err) {
+      setSpecError("Gagal mengambil data spesialisasi. Silakan periksa koneksi internet Anda.");
+      console.error("Failed to fetch specializations", err);
+    } finally {
+      setLoadingSpecs(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Check if mata_pelajaran_id is array (new format) or string (old format)
+    const subjectIds = Array.isArray(formData.mata_pelajaran_id) 
+      ? formData.mata_pelajaran_id.map(s => s.id)
+      : (formData.mata_pelajaran_id ? [formData.mata_pelajaran_id] : []);
+
+    const timer = setTimeout(() => {
+      if (subjectIds.length > 0) {
+        fetchSpecializations(subjectIds);
+      } else {
+        setAvailableSpecializations([]);
+      }
+    }, 300); // Debounce 300ms
+
+    return () => clearTimeout(timer);
+  }, [formData.mata_pelajaran_id, fetchSpecializations]);
+
   const fetchTutors = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get(`/admin/tutors?page=${page}&search=${search}`);
-      setTutors(res.data.data.tutors);
-      setTotalPages(res.data.data.pagination.pages);
+      const res = await api.get(`admin/tutors?page=${page}&search=${search}`);
+      const tutorsData = res.data?.data?.tutors || [];
+      const totalPagesData = res.data?.data?.pagination?.pages || 1;
+      setTutors(tutorsData);
+      setTotalPages(totalPagesData);
     } catch (err) {
       console.error("Failed to fetch tutors", err);
     } finally {
@@ -53,14 +147,69 @@ export default function AdminTutorsPage() {
 
 
 
-  const handleOpenModal = (tutor = null) => {
+  const handleOpenModal = async (tutor = null) => {
+    setShowSubjectChangeConfirm(false);
+    setPendingSubjectId("");
     if (tutor) {
       setEditingTutor(tutor);
+      
+      // Parse multi-select values
+      // Jenjang/Specialization
+      const jenjangStr = tutor.specialization || "";
+      const jenjangArray = jenjangStr.split(',').filter(Boolean).map(s => ({ id: s.trim(), name: s.trim() }));
+
+      // Subjects
+      const subjStr = tutor.mata_pelajaran_id || "";
+      const subjIds = subjStr.split(',').filter(Boolean).map(s => s.trim());
+      const subjArray = subjIds.map(id => {
+        const found = subjects.find(s => s.id === id);
+        return found ? { id: found.id, name: found.name } : { id, name: 'Unknown Subject' };
+      });
+
+      // Specializations (Specs)
+      const specStr = tutor.spesialisasi_id || "";
+      const specIds = specStr.split(',').filter(Boolean).map(s => s.trim());
+      
+      let specArray = [];
+      if (subjIds.length > 0) {
+        // Fetch specs for these subjects to populate options and map names
+        try {
+          const promises = subjIds.map(id => api.get(`spesialisasi/by-mata-pelajaran/${id}`));
+          const responses = await Promise.all(promises);
+          
+          const allSpecs = [];
+          const seenIds = new Set();
+          
+          responses.forEach(res => {
+            const specs = res.data?.data || [];
+            specs.forEach(sp => {
+              if (!seenIds.has(sp.id)) {
+                seenIds.add(sp.id);
+                allSpecs.push(sp);
+              }
+            });
+          });
+          
+          setAvailableSpecializations(allSpecs);
+          
+          specArray = specIds.map(id => {
+            const found = allSpecs.find(s => s.id === id);
+            return found ? { id: found.id, name: found.name } : { id, name: 'Unknown Specialization' };
+          });
+        } catch (err) {
+          console.error("Failed to fetch specializations in modal", err);
+          // Fallback to IDs if fetch fails
+          specArray = specIds.map(id => ({ id, name: 'Unknown Specialization' }));
+        }
+      }
+
       setFormData({
         name: tutor.user?.name || "",
         email: tutor.user?.email || "",
         phone: tutor.phone || "",
-        specialization: tutor.specialization || "",
+        specialization: jenjangArray,
+        mata_pelajaran_id: subjArray,
+        spesialisasi_id: specArray,
         profilePhoto: tutor.profilePhoto || "",
         education: tutor.education || "",
         experience: tutor.experience || "",
@@ -71,12 +220,15 @@ export default function AdminTutorsPage() {
       });
     } else {
       setEditingTutor(null);
+      setAvailableSpecializations([]);
       setFormData({
         name: "",
         email: "",
         password: "",
         phone: "",
-        specialization: "",
+        specialization: [],
+        mata_pelajaran_id: [],
+        spesialisasi_id: [],
         profilePhoto: "",
         education: "",
         experience: "",
@@ -91,13 +243,44 @@ export default function AdminTutorsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (formData.specialization.length === 0) {
+      toast.error("Mohon pilih Jenjang Pendidikan");
+      return;
+    }
+    if (formData.mata_pelajaran_id.length === 0) {
+      toast.error("Mohon pilih Mata Pelajaran");
+      return;
+    }
+    if (formData.spesialisasi_id.length === 0) {
+      toast.error("Mohon pilih Spesialisasi");
+      return;
+    }
+
     const loadingToast = toast.loading(editingTutor ? "Memperbarui data guru..." : "Menambah guru baru...");
+    
+    // Prepare payload
+    const payload = { ...formData };
+    
+    // Convert arrays to comma-separated strings
+    payload.specialization = Array.isArray(formData.specialization) 
+      ? formData.specialization.map(s => s.name).join(',') 
+      : formData.specialization;
+      
+    payload.mata_pelajaran_id = Array.isArray(formData.mata_pelajaran_id)
+      ? formData.mata_pelajaran_id.map(s => s.id).join(',')
+      : formData.mata_pelajaran_id;
+      
+    payload.spesialisasi_id = Array.isArray(formData.spesialisasi_id)
+      ? formData.spesialisasi_id.map(s => s.id).join(',')
+      : formData.spesialisasi_id;
+
     try {
       if (editingTutor) {
-        await api.put(`/admin/tutors/${editingTutor.id}`, formData);
+        await api.put(`admin/tutors/${editingTutor.id}`, payload);
         toast.success("Data guru berhasil diperbarui", { id: loadingToast });
       } else {
-        await api.post("/admin/tutors", formData);
+        await api.post("admin/tutors", payload);
         toast.success("Guru baru berhasil ditambahkan", { id: loadingToast });
       }
       setIsModalOpen(false);
@@ -110,7 +293,7 @@ export default function AdminTutorsPage() {
   const handleToggleStatus = async (id, currentStatus) => {
     const loadingToast = toast.loading("Memperbarui status...");
     try {
-      await api.patch(`/admin/tutors/${id}/status`, { isActive: !currentStatus });
+      await api.patch(`admin/tutors/${id}/status`, { isActive: !currentStatus });
       toast.success(`Akun guru ${!currentStatus ? 'diaktifkan' : 'dinonaktifkan'}`, { id: loadingToast });
       fetchTutors();
     } catch (_err) {
@@ -130,7 +313,7 @@ export default function AdminTutorsPage() {
 
     setUploading(true);
     try {
-      const response = await api.post("/admin/upload", formDataUpload, {
+      const response = await api.post("admin/upload", formDataUpload, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setFormData({ ...formData, profilePhoto: response.data.data.url });
@@ -147,7 +330,7 @@ export default function AdminTutorsPage() {
       "Nama": t.user?.name,
       "Email": t.user?.email,
       "Telepon": t.phone || "-",
-      "Spesialisasi": t.specialization || "-",
+      "Jenjang Pendidikan": t.specialization || "-",
       "Status": t.isActive ? "Aktif" : "Nonaktif",
       "Daftar Pada": new Date(t.createdAt).toLocaleDateString()
     }));
@@ -163,7 +346,7 @@ export default function AdminTutorsPage() {
       const doc = new jsPDF();
       doc.text("Daftar Guru LMS YakinPintar", 14, 15);
       
-      const tableColumn = ["Nama", "Email", "Telepon", "Spesialisasi", "Status", "Daftar Pada"];
+      const tableColumn = ["Nama", "Email", "Telepon", "Jenjang Pendidikan", "Status", "Daftar Pada"];
       const tableRows = tutors.map(t => [
         t.user?.name,
         t.user?.email,
@@ -237,7 +420,7 @@ export default function AdminTutorsPage() {
           <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
             <tr>
               <th className="px-6 py-4">Nama Guru</th>
-              <th className="px-6 py-4">Spesialisasi</th>
+              <th className="px-6 py-4">Jenjang Pendidikan</th>
               <th className="px-6 py-4">Kontak</th>
               <th className="px-6 py-4">Status</th>
               <th className="px-6 py-4">Aksi</th>
@@ -351,7 +534,48 @@ export default function AdminTutorsPage() {
                 <XCircle size={24} />
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex-1">
+            <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex-1 relative">
+              {/* Confirmation Overlay for Subject Change */}
+              {showSubjectChangeConfirm && (
+                <div className="absolute inset-0 z-[60] flex items-center justify-center bg-white/90 backdrop-blur-sm p-6 text-center">
+                  <div className="max-w-xs space-y-4">
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                      <RefreshCcw size={24} />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-slate-900">Ganti Mata Pelajaran?</h4>
+                      <p className="text-sm text-slate-500">Mengubah mata pelajaran akan menghapus spesialisasi yang sudah dipilih.</p>
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowSubjectChangeConfirm(false);
+                          setPendingSubjectId("");
+                        }}
+                        className="flex-1 rounded-lg border border-slate-200 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                      >
+                        Batal
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData({ 
+                            ...formData, 
+                            mata_pelajaran_id: pendingSubjectId,
+                            spesialisasi_id: "" 
+                          });
+                          setShowSubjectChangeConfirm(false);
+                          setPendingSubjectId("");
+                        }}
+                        className="flex-1 rounded-lg bg-amber-500 py-2 text-sm font-semibold text-white hover:bg-amber-600 shadow-sm"
+                      >
+                        Ya, Ganti
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="grid gap-6 sm:grid-cols-3">
                 <div className="sm:col-span-2 space-y-4">
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -387,16 +611,68 @@ export default function AdminTutorsPage() {
                     </div>
                     <div>
                       <label className="text-xs font-semibold text-slate-500 uppercase flex items-center gap-1">
-                        <GraduationCap size={14} /> Spesialisasi
+                        <GraduationCap size={14} /> Jenjang Pendidikan
                       </label>
-                      <input
-                        type="text"
-                        required
+                      <MultiAutocomplete
+                        name="specialization"
+                        options={STUDENT_GRADES.map(g => ({ id: g, name: g }))}
                         value={formData.specialization}
                         onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
-                        className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary"
-                        placeholder="Contoh: Matematika, Bahasa Arab"
+                        placeholder="Pilih Jenjang"
+                        className="mt-1"
                       />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-slate-500 uppercase flex items-center gap-1">
+                         <BookOpen size={14} /> Mata Pelajaran
+                      </label>
+                      <MultiAutocomplete
+                        name="mata_pelajaran_id"
+                        options={subjects}
+                        value={formData.mata_pelajaran_id}
+                        onChange={(e) => setFormData({ ...formData, mata_pelajaran_id: e.target.value })}
+                        placeholder="Pilih Mata Pelajaran"
+                        loading={loadingSubjects}
+                        error={subjectError}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-slate-500 uppercase flex items-center gap-1">
+                         <Briefcase size={14} /> Spesialisasi
+                      </label>
+                      <MultiAutocomplete
+                        name="spesialisasi_id"
+                        options={availableSpecializations}
+                        value={formData.spesialisasi_id}
+                        onChange={(e) => setFormData({ ...formData, spesialisasi_id: e.target.value })}
+                        placeholder={formData.mata_pelajaran_id.length > 0 ? "Pilih Spesialisasi" : "Pilih mata pelajaran terlebih dahulu"}
+                        loading={loadingSpecs}
+                        disabled={loadingSpecs || formData.mata_pelajaran_id.length === 0}
+                        className="mt-1"
+                      />
+                      {!loadingSpecs && formData.mata_pelajaran_id.length > 0 && availableSpecializations.length === 0 && (
+                        <p className="mt-1.5 text-[10px] font-medium text-amber-600 flex items-center gap-1">
+                          <AlertCircle size={12} />
+                          Belum ada data spesialisasi untuk mata pelajaran ini.
+                        </p>
+                      )}
+                      {specError && (
+                        <div className="mt-2 flex items-center justify-between gap-2 rounded-md bg-red-50 p-2 text-[10px] font-medium text-red-700">
+                          <div className="flex items-center gap-1">
+                            <AlertCircle size={12} />
+                            <span>{specError}</span>
+                          </div>
+                          <button 
+                            type="button"
+                            onClick={() => fetchSpecializations(formData.mata_pelajaran_id.map(s => s.id))}
+                            className="flex items-center gap-1 rounded bg-red-100 px-1.5 py-0.5 hover:bg-red-200"
+                          >
+                            <RefreshCcw size={10} />
+                            Retry
+                          </button>
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label className="text-xs font-semibold text-slate-500 uppercase">Harga per Jam (Rp)</label>
@@ -528,9 +804,10 @@ export default function AdminTutorsPage() {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-accent"
+                  disabled={loading || (formData.mata_pelajaran_id && !formData.spesialisasi_id)}
+                  className="rounded-lg bg-primary px-6 py-2 text-sm font-semibold text-white hover:bg-accent disabled:opacity-50"
                 >
-                  {editingTutor ? "Update Guru" : "Simpan Guru"}
+                  {editingTutor ? "Simpan Perubahan" : "Tambah Guru"}
                 </button>
               </div>
             </form>

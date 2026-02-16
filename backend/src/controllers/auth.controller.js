@@ -141,18 +141,33 @@ export const registerTutor = async (req, res, next) => {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
+    // Handle File Uploads
+    let profilePhotoUrl = null;
+    if (req.files && req.files.photo) {
+      const file = req.files.photo[0];
+      profilePhotoUrl = `${req.protocol}://${req.get("host")}/uploads/${file.filename}`;
+    }
+
+    // Parse numeric fields
+    const numericHourlyRate = hourlyRate ? parseFloat(String(hourlyRate).replace(/[^0-9]/g, "")) : 0;
+
     // Use RPC for atomic creation
-    // Note: create_tutor_v1 signature: p_name, p_email, p_password_hash, p_whatsapp, p_bio, p_subjects, p_profile_photo, p_is_active
     const { data, error: rpcError } = await withRetry(
       () =>
-        supabase.rpc("create_tutor_v1", {
+        supabase.rpc("create_tutor_v2", {
           p_name: name || null,
           p_email: normalizedEmail || null,
           p_password_hash: passwordHash || null,
           p_whatsapp: whatsapp || null,
-          p_bio: education || null,
-          p_subjects: Array.isArray(subjects) ? subjects : (subjects ? subjects.split(",").map(s => s.trim()) : []),
-          p_profile_photo: null,
+          p_education: education || null,
+          p_experience: experience || null,
+          p_subjects: Array.isArray(subjects) ? subjects : (subjects ? String(subjects).split(",").map(s => s.trim()) : []),
+          p_student_grades: Array.isArray(studentGrades) ? studentGrades : (studentGrades ? String(studentGrades).split(",").map(s => s.trim()) : []),
+          p_hourly_rate: numericHourlyRate,
+          p_city: city || null,
+          p_area: area || null,
+          p_availability: availability || null,
+          p_profile_photo: profilePhotoUrl,
           p_is_active: true
         }),
       { context: "registerTutor:rpc" }
@@ -164,7 +179,7 @@ export const registerTutor = async (req, res, next) => {
         error: rpcError,
         stack: new Error().stack 
       });
-      return next(rpcError);
+      return next(new AppError("Gagal mendaftarkan guru karena kendala database.", 500));
     }
 
     if (data.status === "error") {
@@ -192,10 +207,14 @@ export const registerTutor = async (req, res, next) => {
       tutor: {
         id: data.data.id,
         user_id: data.data.user_id,
-        bio: education,
-        subjects: Array.isArray(subjects) ? subjects : (subjects ? subjects.split(",").map(s => s.trim()) : []),
+        education,
+        experience,
+        subjects: Array.isArray(subjects) ? subjects : (subjects ? String(subjects).split(",").map(s => s.trim()) : []),
+        student_grades: Array.isArray(studentGrades) ? studentGrades : (studentGrades ? String(studentGrades).split(",").map(s => s.trim()) : []),
+        hourly_rate: numericHourlyRate,
         city,
         area,
+        profile_photo: profilePhotoUrl,
         is_active: true
       }
     });

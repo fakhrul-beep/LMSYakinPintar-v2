@@ -26,7 +26,7 @@ export default function AdminRoleManagementPage() {
   const fetchAdmins = async () => {
     setLoading(true);
     try {
-      const res = await api.get("/admin/users");
+      const res = await api.get("admin/users");
       setAdmins(res.data.data);
     } catch (_err) {
       console.error("Failed to fetch admins", _err);
@@ -41,10 +41,10 @@ export default function AdminRoleManagementPage() {
     const loadingToast = toast.loading(editingAdmin ? "Memperbarui admin..." : "Menambah admin...");
     try {
       if (editingAdmin) {
-        await api.put(`/admin/users/${editingAdmin.id}`, formData);
+        await api.put(`admin/users/${editingAdmin.id}`, formData);
         toast.success("Admin berhasil diperbarui", { id: loadingToast });
       } else {
-        await api.post("/admin/users", formData);
+        await api.post("admin/users", formData);
         toast.success("Admin baru berhasil ditambahkan", { id: loadingToast });
       }
       setIsModalOpen(false);
@@ -59,7 +59,7 @@ export default function AdminRoleManagementPage() {
     
     const loadingToast = toast.loading("Menghapus admin...");
     try {
-      await api.delete(`/admin/users/${id}`);
+      await api.delete(`admin/users/${id}`);
       toast.success("Admin berhasil dihapus", { id: loadingToast });
       fetchAdmins();
     } catch (_err) {

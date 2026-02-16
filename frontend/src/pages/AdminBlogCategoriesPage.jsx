@@ -16,7 +16,7 @@ export default function AdminBlogCategoriesPage() {
   const fetchCategories = async () => {
     setLoading(true);
     try {
-      const res = await api.get("/admin/blog-categories");
+      const res = await api.get("admin/blog-categories");
       setCategories(res.data.data);
     } catch (_err) {
       toast.error("Gagal memuat kategori");
@@ -45,10 +45,10 @@ export default function AdminBlogCategoriesPage() {
     const loadingToast = toast.loading(editingCategory ? "Memperbarui kategori..." : "Menambah kategori...");
     try {
       if (editingCategory) {
-        await api.put(`/admin/blog-categories/${editingCategory.id}`, formData);
+        await api.put(`admin/blog-categories/${editingCategory.id}`, formData);
         toast.success("Kategori berhasil diperbarui", { id: loadingToast });
       } else {
-        await api.post("/admin/blog-categories", formData);
+        await api.post("admin/blog-categories", formData);
         toast.success("Kategori berhasil ditambahkan", { id: loadingToast });
       }
       setIsModalOpen(false);
@@ -63,7 +63,7 @@ export default function AdminBlogCategoriesPage() {
     
     const loadingToast = toast.loading("Menghapus kategori...");
     try {
-      await api.delete(`/admin/blog-categories/${id}`);
+      await api.delete(`admin/blog-categories/${id}`);
       toast.success("Kategori berhasil dihapus", { id: loadingToast });
       fetchCategories();
     } catch (_err) {

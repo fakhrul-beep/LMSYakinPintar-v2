@@ -127,7 +127,7 @@ const TutorDashboardPage = () => {
   const fetchBookings = async (silent = false) => {
     if (!silent) setBookingLoading(true);
     try {
-      const response = await api.get('/bookings/tutor');
+      const response = await api.get('bookings/tutor');
       setBookings(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error("Error fetching bookings:", error);
@@ -140,7 +140,7 @@ const TutorDashboardPage = () => {
 
   const fetchReports = async () => {
     try {
-      const response = await api.get('/reports/tutor');
+      const response = await api.get('reports/tutor');
       setReports(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error("Error fetching reports:", error);
@@ -150,7 +150,7 @@ const TutorDashboardPage = () => {
   const fetchEligibleBookings = async () => {
     setLoadingEligible(true);
     try {
-      const response = await api.get('/bookings/tutor/completed-for-report');
+      const response = await api.get('bookings/tutor/completed-for-report');
       setEligibleBookings(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error("Error fetching eligible bookings:", error);
@@ -162,7 +162,7 @@ const TutorDashboardPage = () => {
   const handleUpdateBookingStatus = async (bookingId, newStatus) => {
     const toastId = toast.loading(`Mengubah status ke ${newStatus}...`);
     try {
-      const response = await api.patch(`/bookings/${bookingId}/status`, { status: newStatus });
+      const response = await api.patch(`bookings/${bookingId}/status`, { status: newStatus });
       const updatedBooking = response.data;
       
       if (!updatedBooking) throw new Error("Respons server tidak valid");
@@ -206,7 +206,7 @@ const TutorDashboardPage = () => {
   const fetchProfile = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/users/profile');
+      const response = await api.get('users/profile');
       const userData = response.data?.data;
       if (!userData) throw new Error("Data profil tidak ditemukan");
 
@@ -256,7 +256,7 @@ const TutorDashboardPage = () => {
     setUploading(true);
     const toastId = toast.loading("Mengunggah foto...");
     try {
-      const response = await api.post("/users/profile/photo", formData, {
+      const response = await api.post("users/profile/photo", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       
@@ -269,7 +269,7 @@ const TutorDashboardPage = () => {
       
       // Refresh local auth data to sync photo across the app
       if (updateUserData) {
-        const profileRes = await api.get('/users/profile');
+        const profileRes = await api.get('users/profile');
         updateUserData(profileRes.data.data);
       }
     } catch (error) {
@@ -317,7 +317,7 @@ const TutorDashboardPage = () => {
         availability: profile.availability
       });
 
-      const response = await api.put('/users/profile', {
+      const response = await api.put('users/profile', {
         name: profile.name.trim(),
         whatsapp: profile.whatsapp.trim(),
         profile_photo: profile.profile_photo,
@@ -636,13 +636,34 @@ const TutorDashboardPage = () => {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Email</label>
-                        <input 
-                          type="email" 
-                          disabled
-                          value={user?.email}
-                          className="w-full rounded-xl border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm text-slate-500 cursor-not-allowed"
-                        />
+                        <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Mata Pelajaran yang Diampu</label>
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {profile.subjects.map((sub, idx) => (
+                            <span key={idx} className="flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1 text-[11px] font-bold text-primary ring-1 ring-primary/20">
+                              {sub}
+                              <button type="button" onClick={() => setProfile({...profile, subjects: profile.subjects.filter((_, i) => i !== idx)})} className="hover:text-red-500">
+                                <X size={12} />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                        <div className="flex gap-2">
+                          <input 
+                            type="text" 
+                            placeholder="Tambah mata pelajaran..."
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                const val = e.target.value.trim();
+                                if (val && !profile.subjects.includes(val)) {
+                                  setProfile({ ...profile, subjects: [...profile.subjects, val] });
+                                  e.target.value = '';
+                                }
+                              }
+                            }}
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm focus:border-primary focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/5 transition-all"
+                          />
+                        </div>
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Nomor WhatsApp</label>

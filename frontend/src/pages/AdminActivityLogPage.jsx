@@ -16,7 +16,7 @@ export default function AdminActivityLogPage() {
     const fetchLogs = async () => {
       setLoading(true);
       try {
-        const res = await api.get(`/admin/logs?page=${page}`);
+        const res = await api.get(`admin/logs?page=${page}`);
         setLogs(res.data.data.logs);
         setTotalPages(res.data.data.pagination.pages);
       } catch (err) {

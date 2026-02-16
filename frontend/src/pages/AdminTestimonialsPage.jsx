@@ -20,7 +20,7 @@ export default function AdminTestimonialsPage() {
   const fetchTestimonials = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get(`/admin/testimonials?page=${page}&search=${search}`);
+      const res = await api.get(`admin/testimonials?page=${page}&search=${search}`);
       setTestimonials(res.data.data.testimonials);
       setTotalPages(res.data.data.pagination.pages);
     } catch (err) {
@@ -39,7 +39,7 @@ export default function AdminTestimonialsPage() {
     const newStatus = currentStatus === 'approved' ? 'rejected' : 'approved';
     const loadingToast = toast.loading("Memperbarui status testimoni...");
     try {
-      await api.patch(`/admin/testimonials/${id}/status`, { status: newStatus });
+      await api.patch(`admin/testimonials/${id}/status`, { status: newStatus });
       toast.success(`Testimoni berhasil di-${newStatus === 'approved' ? 'tampilkan' : 'sembunyikan'}`, { id: loadingToast });
       fetchTestimonials();
     } catch (err) {
@@ -50,7 +50,7 @@ export default function AdminTestimonialsPage() {
   const handleDelete = async (id) => {
     if (!window.confirm("Hapus testimoni ini secara permanen?")) return;
     try {
-      await api.delete(`/admin/testimonials/${id}`);
+      await api.delete(`admin/testimonials/${id}`);
       toast.success("Testimoni berhasil dihapus");
       fetchTestimonials();
     } catch (err) {

@@ -22,6 +22,7 @@ import AdminTutorsPage from "./pages/AdminTutorsPage";
 import AdminBlogPage from "./pages/AdminBlogPage";
 import AdminBlogCategoriesPage from "./pages/AdminBlogCategoriesPage";
 import AdminActivityLogPage from "./pages/AdminActivityLogPage";
+import AdminCorrelationErrorsPage from "./pages/AdminCorrelationErrorsPage";
 import AdminRoleManagementPage from "./pages/AdminRoleManagementPage";
 import AdminStudentsPage from "./pages/AdminStudentsPage";
 import AdminPaymentsPage from "./pages/AdminPaymentsPage";
@@ -88,6 +89,7 @@ function App() {
             <Route path="blog-categories" element={<AdminBlogCategoriesPage />} />
             <Route path="testimonials" element={<AdminTestimonialsPage />} />
             <Route path="logs" element={<AdminActivityLogPage />} />
+            <Route path="correlation-errors" element={<AdminCorrelationErrorsPage />} />
             <Route path="roles" element={<AdminRoleManagementPage />} />
             <Route path="settings" element={<div>Pengaturan (Segera)</div>} />
           </Route>

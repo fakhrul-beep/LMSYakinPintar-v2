@@ -34,7 +34,7 @@ export default function AdminStudentsPage() {
   const fetchStudents = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get(`/admin/students?page=${page}&search=${search}`);
+      const res = await api.get(`admin/students?page=${page}&search=${search}`);
       setStudents(res.data.data.students);
       setTotalPages(res.data.data.pagination.pages);
     } catch (err) {
@@ -94,10 +94,10 @@ const handleSubmit = async (e) => {
         isActive: formData.isActive
       };
     if (editingStudent) {
-      await api.put(`/admin/students/${editingStudent.id}`, dataToSend);
+      await api.put(`admin/students/${editingStudent.id}`, dataToSend);
       toast.success("Data siswa berhasil diperbarui", { id: loadingToast });
     } else {
-      await api.post("/admin/students", dataToSend);
+      await api.post("admin/students", dataToSend);
       toast.success("Siswa baru berhasil ditambahkan", { id: loadingToast });
     }
       setIsModalOpen(false);
